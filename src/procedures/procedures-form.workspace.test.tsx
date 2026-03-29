@@ -1,0 +1,203 @@
+import React from 'react';
+import { render, screen, waitFor, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import {
+  type FetchResponse,
+  getDefaultsFromConfigSchema,
+  openmrsFetch,
+  showSnackbar,
+  useConfig,
+} from '@openmrs/esm-framework';
+import { type PatientWorkspace2DefinitionProps } from '@openmrs/esm-patient-common-lib';
+import { mockPatient } from 'tools';
+import { mockProcedureTypes, mockProceduresResponse, searchedProcedure } from '__mocks__';
+import { type ConfigObject, configSchema } from '../config-schema';
+import { saveProcedure, useConceptSearch, useProcedureTypes } from './procedures.resource';
+import ProceduresForm from './procedures-form.workspace';
+
+jest.mock('./procedures.resource', () => ({
+  ...jest.requireActual('./procedures.resource'),
+  saveProcedure: jest.fn(),
+  useConceptSearch: jest.fn(),
+  useProcedureTypes: jest.fn(),
+  useMutatePatientProcedures: jest.fn(() => jest.fn()),
+  useProcedures: jest.fn(),
+}));
+
+const mockUseConfig = jest.mocked(useConfig<ConfigObject>);
+const mockOpenmrsFetch = jest.mocked(openmrsFetch);
+const mockSaveProcedure = jest.mocked(saveProcedure);
+const mockShowSnackbar = jest.mocked(showSnackbar);
+const mockUseConceptSearch = jest.mocked(useConceptSearch);
+const mockUseProcedureTypes = jest.mocked(useProcedureTypes);
+
+mockUseConfig.mockReturnValue({
+  ...getDefaultsFromConfigSchema(configSchema),
+  procedurePageSize: 5,
+  procedureCodedConceptClassUuid: '',
+  bodySiteConceptClassUuid: '',
+  statusConceptClassUuid: '',
+});
+
+const defaultProps: PatientWorkspace2DefinitionProps<{}, {}> = {
+  closeWorkspace: jest.fn(),
+  groupProps: {
+    patientUuid: mockPatient.id,
+    patient: mockPatient,
+    visitContext: null,
+    mutateVisitContext: null,
+  },
+  workspaceName: '',
+  launchChildWorkspace: jest.fn(),
+  workspaceProps: {},
+  windowProps: {},
+  windowName: '',
+  isRootWorkspace: false,
+  showActionMenu: true,
+};
+
+function renderProceduresForm() {
+  render(<ProceduresForm {...defaultProps} />);
+}
+
+beforeEach(() => {
+  mockUseProcedureTypes.mockReturnValue({ procedureTypes: mockProcedureTypes, isLoading: false });
+  mockUseConceptSearch.mockReturnValue({ searchResults: [], isSearching: false });
+  mockOpenmrsFetch.mockResolvedValue({ data: { results: [] } } as FetchResponse);
+});
+
+describe('ProceduresForm', () => {
+  it('renders all form fields', () => {
+    renderProceduresForm();
+
+    expect(screen.getByRole('searchbox', { name: /enter procedure/i })).toBeInTheDocument();
+    expect(screen.getByRole('group', { name: /procedure type/i })).toBeInTheDocument();
+    expect(screen.getByRole('group', { name: /body site/i })).toBeInTheDocument();
+    expect(screen.getByLabelText(/start date/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/end date/i)).toBeInTheDocument();
+    expect(screen.getByRole('group', { name: /^status$/i })).toBeInTheDocument();
+    expect(screen.getByRole('group', { name: /notes/i })).toBeInTheDocument();
+  });
+
+  it('renders Cancel and Save & close buttons', () => {
+    renderProceduresForm();
+
+    const cancelButton = screen.getByRole('button', { name: /cancel/i });
+    const submitButton = screen.getByRole('button', { name: /save & close/i });
+    expect(cancelButton).toBeInTheDocument();
+    expect(cancelButton).toBeEnabled();
+    expect(submitButton).toBeInTheDocument();
+    expect(submitButton).toBeEnabled();
+  });
+
+  it('calls closeWorkspace when Cancel is clicked', async () => {
+    const user = userEvent.setup();
+    renderProceduresForm();
+
+    await user.click(screen.getByRole('button', { name: /cancel/i }));
+    expect(defaultProps.closeWorkspace).toHaveBeenCalledTimes(1);
+  });
+
+  it('shows a validation error when submitting without a procedure', async () => {
+    const user = userEvent.setup();
+    renderProceduresForm();
+
+    await user.click(screen.getByRole('button', { name: /save & close/i }));
+
+    expect(screen.getByText(/a procedure is required/i)).toBeInTheDocument();
+  });
+
+  it('renders search results as the user types in the procedure search box', async () => {
+    const user = userEvent.setup();
+
+    mockUseConceptSearch.mockReturnValue({ searchResults: searchedProcedure, isSearching: false });
+
+    renderProceduresForm();
+
+    await user.type(screen.getByRole('searchbox', { name: /enter procedure/i }), 'App');
+
+    expect(screen.getByRole('menuitem', { name: /appendectomy/i })).toBeInTheDocument();
+  });
+
+  it('shows a "No results" tile when a search yields no matches', async () => {
+    const user = userEvent.setup();
+
+    mockUseConceptSearch.mockReturnValue({ searchResults: [], isSearching: false });
+
+    renderProceduresForm();
+
+    await user.type(screen.getByRole('searchbox', { name: /enter procedure/i }), 'Xyz123');
+
+    expect(screen.getByText(/no results for/i)).toBeInTheDocument();
+  });
+
+  it('shows a loading indicator while searching', async () => {
+    const user = userEvent.setup();
+
+    mockUseConceptSearch.mockReturnValue({ searchResults: [], isSearching: true });
+
+    renderProceduresForm();
+
+    await user.type(screen.getByRole('searchbox', { name: /enter procedure/i }), 'App');
+
+    expect(screen.getByText(/searching/i)).toBeInTheDocument();
+  });
+
+  it('displays procedure types in the ComboBox', async () => {
+    const user = userEvent.setup();
+    renderProceduresForm();
+
+    // The ComboBox input is within the "Procedure type" group
+    const procedureTypeGroup = screen.getByRole('group', { name: /procedure type/i });
+    const combobox = within(procedureTypeGroup).getByRole('combobox');
+    expect(combobox).toBeInTheDocument();
+
+    // Open the dropdown and expect items to appear
+    await user.click(combobox);
+    expect(screen.getByRole('option', { name: /surgery/i })).toBeInTheDocument();
+    expect(screen.getByRole('option', { name: /endoscopy/i })).toBeInTheDocument();
+  });
+
+  it('shows a loading indicator for procedure types while loading', () => {
+    mockUseProcedureTypes.mockReturnValue({ procedureTypes: [], isLoading: true });
+    renderProceduresForm();
+
+    expect(screen.getAllByText(/loading/i).length).toBeGreaterThan(0);
+  });
+
+  it('shows a success snackbar after successfully saving a procedure', async () => {
+    const user = userEvent.setup();
+
+    mockUseConceptSearch.mockReturnValue({ searchResults: searchedProcedure, isSearching: false });
+    mockSaveProcedure.mockResolvedValue({ status: 201 } as unknown as FetchResponse);
+    mockOpenmrsFetch.mockResolvedValue({ data: mockProceduresResponse } as FetchResponse);
+
+    renderProceduresForm();
+
+    await user.type(screen.getByRole('searchbox', { name: /enter procedure/i }), 'App');
+    await user.click(screen.getByRole('menuitem', { name: /appendectomy/i }));
+    await user.click(screen.getByRole('button', { name: /save & close/i }));
+
+    await waitFor(() => expect(mockShowSnackbar).toHaveBeenCalled());
+    expect(mockShowSnackbar).toHaveBeenCalledWith(
+      expect.objectContaining({ kind: 'success', title: 'Procedure saved' }),
+    );
+  });
+
+  it('shows an error notification when saving fails', async () => {
+    const user = userEvent.setup();
+
+    mockUseConceptSearch.mockReturnValue({ searchResults: searchedProcedure, isSearching: false });
+    mockSaveProcedure.mockRejectedValue(new Error('Internal Server Error'));
+    mockOpenmrsFetch.mockResolvedValue({ data: { results: [] } } as FetchResponse);
+
+    renderProceduresForm();
+
+    await user.type(screen.getByRole('searchbox', { name: /enter procedure/i }), 'App');
+    await user.click(screen.getByRole('menuitem', { name: /appendectomy/i }));
+    await user.click(screen.getByRole('button', { name: /save & close/i }));
+
+    await screen.findByText(/error saving procedure/i);
+    expect(screen.getByText(/internal server error/i)).toBeInTheDocument();
+  });
+});

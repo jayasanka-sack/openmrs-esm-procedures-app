@@ -1,28 +1,31 @@
-import { Type, validators } from '@openmrs/esm-framework';
+import { Type } from '@openmrs/esm-framework';
 
 export const configSchema = {
-  // Add your configuration schema here
-  // Example:
-  // logo: {
-  //   src: {
-  //     _type: Type.String,
-  //     _default: '',
-  //     _description: 'The path or URL to the logo image',
-  //     _validators: [validators.isUrl],
-  //   },
-  //   alt: {
-  //     _type: Type.String,
-  //     _default: 'Logo',
-  //     _description: 'The alternative text for the logo image',
-  //   },
-  // },
+  procedurePageSize: {
+    _type: Type.Number,
+    _description: 'Default page size for the procedures table',
+    _default: 5,
+  },
+  procedureCodedConceptClassUuid: {
+    _type: Type.UUID,
+    _description: 'Concept class UUID for procedure coded concepts',
+    _default: '8d490bf4-c2cc-11de-8d13-0010c6dffd0f',
+  },
+  bodySiteConceptClassUuid: {
+    _type: Type.UUID,
+    _description: 'Concept class UUID for body site concepts',
+    _default: '',
+  },
+  statusConceptClassUuid: {
+    _type: Type.UUID,
+    _description: 'Concept class UUID for procedure status concepts',
+    _default: '',
+  },
 };
 
-export type ConfigSchema = {
-  // TypeScript type derived from schema
-  // Example:
-  // logo: {
-  //   src: string;
-  //   alt: string;
-  // };
-};
+export interface ConfigObject {
+  procedurePageSize: number;
+  procedureCodedConceptClassUuid: string;
+  bodySiteConceptClassUuid: string;
+  statusConceptClassUuid: string;
+}

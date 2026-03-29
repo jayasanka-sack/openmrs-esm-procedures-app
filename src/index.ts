@@ -1,9 +1,14 @@
 import { getAsyncLifecycle, getSyncLifecycle, defineConfigSchema } from '@openmrs/esm-framework';
 import { configSchema } from './config-schema';
-import { moduleName } from './constants';
+import { dashboardMeta } from './dashboard.meta';
+import proceduresOverviewComponent from './procedures/procedures-overview.component';
+import proceduresDetailedSummaryComponent from './procedures/procedures-detailed-summary.component';
+import proceduresFormWorkspaceComponent from './procedures/procedures-form.workspace';
+import {createDashboardLink} from "./common-lib-components/createDashboardLink";
+import {moduleName} from "./constants";
 
 const options = {
-  featureName: 'procedures-app',
+  featureName: 'patient-procedures-app',
   moduleName,
 };
 
@@ -20,8 +25,12 @@ export const backendDependencies = {};
 export const root = getAsyncLifecycle(() => import('./root.component'), options);
 
 // Extensions
+export const proceduresOverview = getSyncLifecycle(proceduresOverviewComponent, options);
 
-// Modals
+export const proceduresDetailedSummary = getSyncLifecycle(proceduresDetailedSummaryComponent, options);
 
-// Workspaces
+export const proceduresDashboardLink =
+  // t('Procedures', 'Procedures')
+  getSyncLifecycle(createDashboardLink({ ...dashboardMeta }), options);
 
+export const proceduresFormWorkspace = getSyncLifecycle(proceduresFormWorkspaceComponent, options);

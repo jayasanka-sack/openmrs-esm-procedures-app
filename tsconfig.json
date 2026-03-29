@@ -34,7 +34,7 @@
       "@openmrs/*": ["./node_modules/@openmrs/*"]
     }
   },
-  "include": ["src/**/*"],
+  "include": ["src/**/*", "../../tools/setup-tests.ts"],
   "types": ["@testing-library/jest-dom", "lodash", "react", "react-dom"]
 }
 

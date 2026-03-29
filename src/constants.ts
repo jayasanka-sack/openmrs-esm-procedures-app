@@ -1,1 +1,1 @@
-export const moduleName = '@openmrs/esm-procedures-app';
+export const moduleName = '@openmrs/esm-patient-procedures-app';
