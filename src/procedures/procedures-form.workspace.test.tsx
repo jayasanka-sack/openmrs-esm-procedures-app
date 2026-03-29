@@ -39,7 +39,7 @@ mockUseConfig.mockReturnValue({
   statusConceptClassUuid: '',
 });
 
-const defaultProps: PatientWorkspace2DefinitionProps<{}, {}> = {
+const defaultProps: PatientWorkspace2DefinitionProps<object, object> = {
   closeWorkspace: jest.fn(),
   groupProps: {
     patientUuid: mockPatient.id,
