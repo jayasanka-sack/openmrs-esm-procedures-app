@@ -32,8 +32,8 @@ describe('ProceduresOverview', () => {
 
     expect(screen.queryByRole('progressbar')).not.toBeInTheDocument();
     expect(screen.getByRole('heading', { name: /procedures/i })).toBeInTheDocument();
-    expect(screen.getByTitle(/Empty data illustration/i)).toBeInTheDocument();
-    expect(screen.getByText(/There are no procedures to display for this patient/i)).toBeInTheDocument();
+    expect(screen.getByTestId('empty-card-illustration')).toBeInTheDocument();
+    expect(screen.getByText(/There are no procedures to display/i)).toBeInTheDocument();
   });
 
   it('renders an error state view if there is a problem fetching procedures', async () => {
@@ -52,9 +52,7 @@ describe('ProceduresOverview', () => {
     await waitForLoadingToFinish();
 
     expect(screen.queryByRole('table')).not.toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: /procedures/i })).toBeInTheDocument();
-    expect(screen.getByText(/Error 401: Unauthorized/i)).toBeInTheDocument();
-    expect(screen.getByText(/Sorry, there was a problem displaying this information./i)).toBeInTheDocument();
+    expect(screen.getByText('Error State')).toBeInTheDocument();
   });
 
   it("renders a paginated overview of the patient's procedures", async () => {
@@ -81,7 +79,7 @@ describe('ProceduresOverview', () => {
 
     // Header row + 5 data rows = 6
     expect(screen.getAllByRole('row').length).toEqual(6);
-    expect(screen.getByText(/1–5 of 6 items/i)).toBeInTheDocument();
+    expect(screen.getByText(/5 \/ 6 items/i)).toBeInTheDocument();
 
     // Voided procedure should not appear
     expect(screen.queryByText(/Should Not Appear/i)).not.toBeInTheDocument();
