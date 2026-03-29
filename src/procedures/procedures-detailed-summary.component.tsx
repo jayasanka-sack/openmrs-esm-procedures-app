@@ -20,9 +20,8 @@ import {
   isDesktop as isDesktopLayout,
   launchWorkspace2,
   parseDate,
-  useLayoutType,
+  useLayoutType,CardHeader, EmptyCard, ErrorState
 } from '@openmrs/esm-framework';
-import { CardHeader, EmptyCard, ErrorState } from '@openmrs/esm-framework';
 import { useProcedures } from './procedures.resource';
 import styles from './procedures-overview.scss';
 

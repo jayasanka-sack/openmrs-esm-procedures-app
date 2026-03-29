@@ -26,7 +26,7 @@ const schema = z
 
 export type ProceduresFormSchema = z.infer<typeof schema>;
 
-const ProceduresForm: React.FC<PatientWorkspace2DefinitionProps<{}, {}>> = ({
+const ProceduresForm: React.FC<PatientWorkspace2DefinitionProps<object, object>> = ({
   closeWorkspace,
   groupProps: { patientUuid },
 }) => {

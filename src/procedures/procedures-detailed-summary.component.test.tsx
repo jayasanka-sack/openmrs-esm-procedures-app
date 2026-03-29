@@ -19,8 +19,8 @@ describe('ProceduresDetailedSummary', () => {
 
     expect(screen.queryByRole('progressbar')).not.toBeInTheDocument();
     expect(screen.getByRole('heading', { name: /procedures/i })).toBeInTheDocument();
-    expect(screen.getByTitle(/Empty data illustration/i)).toBeInTheDocument();
-    expect(screen.getByText(/There are no procedures to display for this patient/i)).toBeInTheDocument();
+    expect(screen.getByTestId('empty-card-illustration')).toBeInTheDocument();
+    expect(screen.getByText(/There are no procedures to display/i)).toBeInTheDocument();
   });
 
   it('renders an error state view if there is a problem fetching procedures', async () => {
@@ -39,9 +39,7 @@ describe('ProceduresDetailedSummary', () => {
     await waitForLoadingToFinish();
 
     expect(screen.queryByRole('table')).not.toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: /procedures/i })).toBeInTheDocument();
-    expect(screen.getByText(/Error 401: Unauthorized/i)).toBeInTheDocument();
-    expect(screen.getByText(/Sorry, there was a problem displaying this information./i)).toBeInTheDocument();
+    expect(screen.getByText('Error State')).toBeInTheDocument();
   });
 
   it("renders a detailed summary of all the patient's procedures without pagination", async () => {

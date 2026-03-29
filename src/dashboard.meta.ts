@@ -1,4 +1,4 @@
-import {DashboardLinkConfig} from "./types";
+import type {DashboardLinkConfig} from "./types";
 
 export const dashboardMeta: DashboardLinkConfig & { slot: string } = {
   slot: 'patient-chart-procedures-dashboard-slot',

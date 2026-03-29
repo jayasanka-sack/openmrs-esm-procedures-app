@@ -7,10 +7,12 @@ module.exports = {
   transform: {
     '^.+\\.[jt]sx?$': ['@swc/jest'],
   },
-  transformIgnorePatterns: ['/node_modules/(?!@openmrs|.+\\.pnp\\.[^\\/]+$)'],
+  transformIgnorePatterns: ['/node_modules/(?!@openmrs|dexie|.+\\.pnp\\.[^\\/]+$)'],
   moduleDirectories: ['node_modules', '__mocks__', 'tools', 'src', __dirname],
   moduleNameMapper: {
     '\\.(s?css)$': 'identity-obj-proxy',
+    '^dexie$': '<rootDir>/node_modules/dexie/dist/dexie.js',
+    '^uuid$': '<rootDir>/node_modules/uuid/dist/index.js',
     '@openmrs/esm-framework': '@openmrs/esm-framework/mock',
     '^@carbon/icons-react/es/(.*)$': '@carbon/icons-react/lib/$1',
     '^carbon-components-react/es/(.*)$': 'carbon-components-react/lib/$1',
