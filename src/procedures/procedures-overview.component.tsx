@@ -28,7 +28,7 @@ import { CardHeader, EmptyCard, ErrorState } from '@openmrs/esm-framework';
 import { type ConfigObject } from '../config-schema';
 import { useProcedures } from './procedures.resource';
 import styles from './procedures-overview.scss';
-import {PatientChartPagination} from "../pagination";
+import {PatientChartPagination} from "../common-lib-components/pagination";
 
 interface ProceduresOverviewProps {
   patientUuid: string;

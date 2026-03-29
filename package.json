@@ -63,15 +63,19 @@
     "swr": "2.x"
   },
   "devDependencies": {
+    "@hookform/resolvers": "^5.2.2",
     "@openmrs/esm-framework": "next",
+    "@openmrs/esm-patient-common-lib": "^12.1.0",
     "@openmrs/rspack-config": "next",
     "@rspack/cli": "^1.7.10",
     "@testing-library/jest-dom": "^6.4.5",
     "@testing-library/react": "^15.0.7",
     "@testing-library/user-event": "^14.5.2",
+    "@types/jest": "^30.0.0",
     "@types/react": "^18.3.0",
     "@types/react-dom": "^18.3.0",
     "@types/webpack-env": "^1.18.4",
+    "@typescript-eslint/eslint-plugin": "^8.57.2",
     "cross-env": "^7.0.3",
     "dayjs": "^1.11.13",
     "eslint": "^8.57.0",
@@ -84,6 +88,7 @@
     "prettier": "^3.2.5",
     "react": "^18.1.0",
     "react-dom": "^18.1.0",
+    "react-hook-form": "^7.72.0",
     "react-i18next": "^11.0.0",
     "react-is": "^18.3.1",
     "react-router-dom": "^6.3.0",
@@ -91,7 +96,8 @@
     "sass": "^1.33.0",
     "single-spa": "^6.0.0",
     "swr": "^2.0.0",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "zod": "^4.3.6"
   },
   "lint-staged": {
     "*.{ts,tsx}": "eslint --cache --fix --max-warnings 0",
