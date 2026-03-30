@@ -16,6 +16,7 @@ const schema = z
     endDateTime: z.date().optional().nullable(),
     status: z.string().min(1, 'Status is required'),
     notes: z.string().optional(),
+    estimatedStartDate: z.string().optional(),
   })
   .refine(
     (data) => {
@@ -47,6 +48,7 @@ const ProceduresForm: React.FC<PatientWorkspace2DefinitionProps<object, object>>
       endDateTime: null,
       status: '',
       notes: '',
+      estimatedStartDate: '',
     },
   });
 

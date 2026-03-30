@@ -6,13 +6,17 @@ import {
   Button,
   ButtonSet,
   ComboBox,
+  ContentSwitcher,
   Form,
   FormGroup,
   InlineLoading,
   InlineNotification,
   Layer,
   Search,
+  Select,
+  SelectItem,
   Stack,
+  Switch,
   TextArea,
   Tile,
 } from '@carbon/react';
@@ -65,6 +69,26 @@ const ProceduresFormComponent: React.FC<ProceduresFormComponentProps> = ({
 
   const isTablet = useLayoutType() === 'tablet';
   const [isSubmittingForm, setIsSubmittingForm] = useState(false);
+  const [isStartDateKnown, setIsStartDateKnown] = useState(true);
+  const [estimatedYear, setEstimatedYear] = useState('');
+  const [estimatedMonth, setEstimatedMonth] = useState('');
+
+  const currentYear = new Date().getFullYear();
+  const years = Array.from({ length: currentYear - 1900 + 1 }, (_, i) => String(currentYear - i));
+  const months = [
+    { value: '01', label: 'January' },
+    { value: '02', label: 'February' },
+    { value: '03', label: 'March' },
+    { value: '04', label: 'April' },
+    { value: '05', label: 'May' },
+    { value: '06', label: 'June' },
+    { value: '07', label: 'July' },
+    { value: '08', label: 'August' },
+    { value: '09', label: 'September' },
+    { value: '10', label: 'October' },
+    { value: '11', label: 'November' },
+    { value: '12', label: 'December' },
+  ];
 
   const procedureField = useConceptSearchField(procedureCodedConceptClassUuid);
   const bodySiteField = useConceptSearchField(bodySiteConceptClassUuid);
@@ -78,15 +102,21 @@ const ProceduresFormComponent: React.FC<ProceduresFormComponentProps> = ({
     const endDateTime = getValues('endDateTime');
     const notes = getValues('notes');
 
+    let estimatedStartDate: string | undefined;
+    if (!isStartDateKnown && estimatedYear) {
+      estimatedStartDate = estimatedMonth ? `${estimatedYear}-${estimatedMonth}` : estimatedYear;
+    }
+
     const payload = {
       patient: patientUuid,
       procedureCoded: procedureField.selectedConcept!.uuid,
       procedureType: procedureType,
       bodySite: bodySiteField.selectedConcept!.uuid,
-      startDateTime: startDateTime ? dayjs(startDateTime).format() : undefined,
+      startDateTime: isStartDateKnown && startDateTime ? dayjs(startDateTime).format() : undefined,
       endDateTime: endDateTime ? dayjs(endDateTime).format() : undefined,
       status: statusField.selectedConcept?.uuid,
       notes: notes,
+      estimatedStartDate: estimatedStartDate,
     };
 
     try {
@@ -105,7 +135,10 @@ const ProceduresFormComponent: React.FC<ProceduresFormComponentProps> = ({
   }, [
     bodySiteField.selectedConcept,
     closeWorkspaceWithSavedChanges,
+    estimatedMonth,
+    estimatedYear,
     getValues,
+    isStartDateKnown,
     mutate,
     patientUuid,
     procedureField.selectedConcept,
@@ -140,10 +173,9 @@ const ProceduresFormComponent: React.FC<ProceduresFormComponentProps> = ({
                   placeholder={t('selectProcedureType', 'Select procedure type')}
                   items={procedureTypes}
                   itemToString={(item: ProcedureType) => item?.name ?? ''}
-                  onChange={({ selectedItem }: { selectedItem: ProcedureType }) =>
+                  onChange={({ selectedItem }: { selectedItem: ProcedureType | null }) =>
                     setValue('procedureType', selectedItem.uuid)
                   }
-                  selectedItem={selectedProcedureType}
                 />
               </ResponsiveWrapper>
             )}
@@ -159,24 +191,71 @@ const ProceduresFormComponent: React.FC<ProceduresFormComponentProps> = ({
             />
             {errors.bodySite && <p className={styles.errorMessage}>{errors.bodySite.message}</p>}
           </FormGroup>
-
-          <FormGroup legendText={t('startDate', 'Start date')}>
-            <Controller
-              name="startDateTime"
-              control={control}
-              render={({ field, fieldState }) => (
-                <ResponsiveWrapper>
-                  <OpenmrsDatePicker
-                    {...field}
-                    id="startDateTime"
-                    invalid={Boolean(fieldState?.error?.message)}
-                    invalidText={fieldState?.error?.message}
-                  />
-                </ResponsiveWrapper>
-              )}
-            />
-            {errors.startDateTime && <p className={styles.errorMessage}>{errors.startDateTime.message}</p>}
+          <FormGroup legendText={t('isStartDateKnown', 'Is start date known?')}>
+            <ContentSwitcher
+              size="md"
+              selectedIndex={isStartDateKnown ? 0 : 1}
+              onChange={({ index }: { index: number }) => {
+                setIsStartDateKnown(index === 0);
+                setEstimatedYear('');
+                setEstimatedMonth('');
+              }}
+            >
+              <Switch name="yes">{t('yes', 'Yes')}</Switch>
+              <Switch name="no">{t('no', 'No')}</Switch>
+            </ContentSwitcher>
           </FormGroup>
+
+          {isStartDateKnown && (
+            <FormGroup legendText={t('startDate', 'Start date')}>
+              <Controller
+                name="startDateTime"
+                control={control}
+                render={({ field, fieldState }) => (
+                  <ResponsiveWrapper>
+                    <OpenmrsDatePicker
+                      {...field}
+                      id="startDateTime"
+                      invalid={Boolean(fieldState?.error?.message)}
+                      invalidText={fieldState?.error?.message}
+                    />
+                  </ResponsiveWrapper>
+                )}
+              />
+              {errors.startDateTime && <p className={styles.errorMessage}>{errors.startDateTime.message}</p>}
+            </FormGroup>
+          )}
+
+          {!isStartDateKnown && (
+            <FormGroup legendText={t('estimatedStartDate', 'Estimated start date')}>
+              <ResponsiveWrapper>
+                <Select
+                  id="estimatedYear"
+                  labelText={<RequiredFieldLabel label={t('year', 'Year')} />}
+                  value={estimatedYear}
+                  onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setEstimatedYear(e.target.value)}
+                >
+                  <SelectItem value="" text={t('selectYear', 'Select year')} />
+                  {years.map((year) => (
+                    <SelectItem key={year} value={year} text={year} />
+                  ))}
+                </Select>
+              </ResponsiveWrapper>
+              <ResponsiveWrapper>
+                <Select
+                  id="estimatedMonth"
+                  labelText={t('monthOptional', 'Month (optional)')}
+                  value={estimatedMonth}
+                  onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setEstimatedMonth(e.target.value)}
+                >
+                  <SelectItem value="" text={t('selectMonth', 'Select month (optional)')} />
+                  {months.map((month) => (
+                    <SelectItem key={month.value} value={month.value} text={month.label} />
+                  ))}
+                </Select>
+              </ResponsiveWrapper>
+            </FormGroup>
+          )}
 
           <FormGroup legendText={t('endDate', 'End date')}>
             <Controller
