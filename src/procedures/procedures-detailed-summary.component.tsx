@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   Button,
@@ -26,7 +26,10 @@ import {
   ErrorState,
 } from '@openmrs/esm-framework';
 import { useProcedures } from './procedures.resource';
+import { PatientChartPagination } from '../common-lib-components/pagination/pagination.component';
 import styles from './procedures-overview.scss';
+
+const DEFAULT_PAGE_SIZE = 10;
 
 interface ProceduresDetailedSummaryProps {
   patient: fhir.Patient;
@@ -41,6 +44,8 @@ function ProceduresDetailedSummary({ patient }: ProceduresDetailedSummaryProps) 
   const launchProceduresForm = useCallback(() => launchWorkspace2('procedures-form-workspace'), []);
 
   const { procedures, error, isLoading, isValidating } = useProcedures(patient.id);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
 
   const headers = useMemo(
     () => [
@@ -55,7 +60,7 @@ function ProceduresDetailedSummary({ patient }: ProceduresDetailedSummaryProps) 
     [t],
   );
 
-  const tableRows = useMemo(
+  const allRows = useMemo(
     () =>
       procedures?.map((p) => ({
         id: p.uuid,
@@ -71,6 +76,11 @@ function ProceduresDetailedSummary({ patient }: ProceduresDetailedSummaryProps) 
       })),
     [procedures],
   );
+
+  const tableRows = useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    return allRows?.slice(start, start + pageSize);
+  }, [allRows, currentPage, pageSize]);
 
   if (isLoading) {
     return <DataTableSkeleton role="progressbar" zebra />;
@@ -135,6 +145,16 @@ function ProceduresDetailedSummary({ patient }: ProceduresDetailedSummaryProps) 
                   </Tile>
                 </div>
               ) : null}
+              <PatientChartPagination
+                currentItems={rows.length}
+                totalItems={allRows?.length ?? 0}
+                pageNumber={currentPage}
+                pageSize={pageSize}
+                onPageNumberChange={({ page, pageSize: newPageSize }: { page: number; pageSize: number }) => {
+                  setCurrentPage(page);
+                  setPageSize(newPageSize);
+                }}
+              />
             </>
           )}
         </DataTable>
