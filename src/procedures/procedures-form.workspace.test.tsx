@@ -12,13 +12,20 @@ import { type PatientWorkspace2DefinitionProps } from '@openmrs/esm-patient-comm
 import { mockPatient } from 'tools';
 import { mockProcedureTypes, mockProceduresResponse, searchedProcedure } from '__mocks__';
 import { type ConfigObject, configSchema } from '../config-schema';
-import { saveProcedure, useConceptSearch, useProcedureTypes } from './procedures.resource';
+import {
+  type ConceptResult,
+  saveProcedure,
+  useConceptSearch,
+  useConceptSearchField,
+  useProcedureTypes,
+} from './procedures.resource';
 import ProceduresForm from './procedures-form.workspace';
 
 jest.mock('./procedures.resource', () => ({
   ...jest.requireActual('./procedures.resource'),
   saveProcedure: jest.fn(),
   useConceptSearch: jest.fn(),
+  useConceptSearchField: jest.fn(),
   useProcedureTypes: jest.fn(),
   useMutatePatientProcedures: jest.fn(() => jest.fn()),
   useProcedures: jest.fn(),
@@ -29,6 +36,7 @@ const mockOpenmrsFetch = jest.mocked(openmrsFetch);
 const mockSaveProcedure = jest.mocked(saveProcedure);
 const mockShowSnackbar = jest.mocked(showSnackbar);
 const mockUseConceptSearch = jest.mocked(useConceptSearch);
+const mockUseConceptSearchField = jest.mocked(useConceptSearchField);
 const mockUseProcedureTypes = jest.mocked(useProcedureTypes);
 
 mockUseConfig.mockReturnValue({
@@ -64,6 +72,23 @@ beforeEach(() => {
   mockUseProcedureTypes.mockReturnValue({ procedureTypes: mockProcedureTypes, isLoading: false });
   mockUseConceptSearch.mockReturnValue({ searchResults: [], isSearching: false });
   mockOpenmrsFetch.mockResolvedValue({ data: { results: [] } } as FetchResponse);
+  mockUseConceptSearchField.mockImplementation(() => {
+    const [searchTerm, setSearchTerm] = React.useState('');
+    const [selectedConcept, setSelectedConcept] = React.useState<ConceptResult | null>(null);
+    const { searchResults, isSearching } = mockUseConceptSearch(searchTerm, '');
+    return {
+      searchTerm,
+      setSearchTerm,
+      selectedConcept,
+      setSelectedConcept,
+      searchResults,
+      isSearching,
+      clear: () => {
+        setSearchTerm('');
+        setSelectedConcept(null);
+      },
+    };
+  });
 });
 
 describe('ProceduresForm', () => {
@@ -73,8 +98,8 @@ describe('ProceduresForm', () => {
     expect(screen.getByRole('searchbox', { name: /enter procedure/i })).toBeInTheDocument();
     expect(screen.getByRole('group', { name: /procedure type/i })).toBeInTheDocument();
     expect(screen.getByRole('group', { name: /body site/i })).toBeInTheDocument();
-    expect(screen.getByLabelText(/start date/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/end date/i)).toBeInTheDocument();
+    expect(screen.getByRole('group', { name: /start date/i })).toBeInTheDocument();
+    expect(screen.getByRole('group', { name: /end date/i })).toBeInTheDocument();
     expect(screen.getByRole('group', { name: /^status$/i })).toBeInTheDocument();
     expect(screen.getByRole('group', { name: /notes/i })).toBeInTheDocument();
   });
@@ -163,6 +188,87 @@ describe('ProceduresForm', () => {
     renderProceduresForm();
 
     expect(screen.getAllByText(/loading/i).length).toBeGreaterThan(0);
+  });
+
+  it('calls saveProcedure with the correct payload on submission', async () => {
+    const user = userEvent.setup();
+
+    mockUseConceptSearch.mockReturnValue({ searchResults: searchedProcedure, isSearching: false });
+    mockSaveProcedure.mockResolvedValue({ status: 201 } as unknown as FetchResponse);
+
+    renderProceduresForm();
+
+    await user.type(screen.getByRole('searchbox', { name: /enter procedure/i }), 'App');
+    await user.click(screen.getByRole('menuitem', { name: /appendectomy/i }));
+    await user.click(screen.getByRole('button', { name: /save & close/i }));
+
+    await waitFor(() =>
+      expect(mockSaveProcedure).toHaveBeenCalledWith({
+        patient: mockPatient.id,
+        procedureCoded: 'proc-concept-uuid-1',
+        procedureType: undefined,
+        bodySite: undefined,
+        startDateTime: undefined,
+        endDateTime: undefined,
+        status: undefined,
+        notes: undefined,
+      }),
+    );
+  });
+
+  it('includes notes in the payload when provided', async () => {
+    const user = userEvent.setup();
+
+    mockUseConceptSearch.mockReturnValue({ searchResults: searchedProcedure, isSearching: false });
+    mockSaveProcedure.mockResolvedValue({ status: 201 } as unknown as FetchResponse);
+
+    renderProceduresForm();
+
+    await user.type(screen.getByRole('searchbox', { name: /enter procedure/i }), 'App');
+    await user.click(screen.getByRole('menuitem', { name: /appendectomy/i }));
+    await user.type(screen.getByPlaceholderText(/enter notes/i), 'Some clinical notes');
+    await user.click(screen.getByRole('button', { name: /save & close/i }));
+
+    await waitFor(() =>
+      expect(mockSaveProcedure).toHaveBeenCalledWith(expect.objectContaining({ notes: 'Some clinical notes' })),
+    );
+  });
+
+  it('includes the selected procedure type in the payload', async () => {
+    const user = userEvent.setup();
+
+    mockUseConceptSearch.mockReturnValue({ searchResults: searchedProcedure, isSearching: false });
+    mockSaveProcedure.mockResolvedValue({ status: 201 } as unknown as FetchResponse);
+
+    renderProceduresForm();
+
+    await user.type(screen.getByRole('searchbox', { name: /enter procedure/i }), 'App');
+    await user.click(screen.getByRole('menuitem', { name: /appendectomy/i }));
+
+    const procedureTypeGroup = screen.getByRole('group', { name: /procedure type/i });
+    await user.click(within(procedureTypeGroup).getByRole('combobox'));
+    await user.click(screen.getByRole('option', { name: /surgery/i }));
+
+    await user.click(screen.getByRole('button', { name: /save & close/i }));
+
+    await waitFor(() =>
+      expect(mockSaveProcedure).toHaveBeenCalledWith(expect.objectContaining({ procedureType: 'pt-uuid-1' })),
+    );
+  });
+
+  it('closes the workspace after a successful save', async () => {
+    const user = userEvent.setup();
+
+    mockUseConceptSearch.mockReturnValue({ searchResults: searchedProcedure, isSearching: false });
+    mockSaveProcedure.mockResolvedValue({ status: 201 } as unknown as FetchResponse);
+
+    renderProceduresForm();
+
+    await user.type(screen.getByRole('searchbox', { name: /enter procedure/i }), 'App');
+    await user.click(screen.getByRole('menuitem', { name: /appendectomy/i }));
+    await user.click(screen.getByRole('button', { name: /save & close/i }));
+
+    await waitFor(() => expect(defaultProps.closeWorkspace).toHaveBeenCalledWith({ discardUnsavedChanges: true }));
   });
 
   it('shows a success snackbar after successfully saving a procedure', async () => {

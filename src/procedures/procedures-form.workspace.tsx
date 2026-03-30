@@ -10,8 +10,11 @@ import ProceduresFormComponent from './procedures-form.component';
 const schema = z
   .object({
     procedureCoded: z.string().min(1, 'A procedure is required'),
+    procedureType: z.string().min(1, 'Procedure type is required'),
+    bodySite: z.string().min(1, 'Body site is required'),
     startDateTime: z.date().optional().nullable(),
     endDateTime: z.date().optional().nullable(),
+    status: z.string().min(1, 'Status is required'),
     notes: z.string().optional(),
   })
   .refine(
@@ -38,8 +41,11 @@ const ProceduresForm: React.FC<PatientWorkspace2DefinitionProps<object, object>>
     resolver: zodResolver(schema),
     defaultValues: {
       procedureCoded: '',
+      procedureType: '',
+      bodySite: '',
       startDateTime: null,
       endDateTime: null,
+      status: '',
       notes: '',
     },
   });

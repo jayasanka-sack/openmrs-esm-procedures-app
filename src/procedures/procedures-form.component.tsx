@@ -58,6 +58,7 @@ const ProceduresFormComponent: React.FC<ProceduresFormComponentProps> = ({
     control,
     formState: { errors },
     getValues,
+    setValue,
   } = useFormContext<ProceduresFormSchema>();
 
   const { procedureTypes, isLoading: isLoadingProcedureTypes } = useProcedureTypes();
@@ -69,24 +70,23 @@ const ProceduresFormComponent: React.FC<ProceduresFormComponentProps> = ({
   const bodySiteField = useConceptSearchField(bodySiteConceptClassUuid);
   const statusField = useConceptSearchField(statusConceptClassUuid);
 
-  const [selectedProcedureType, setSelectedProcedureType] = useState<ProcedureType>(null);
-
   const [errorSaving, setErrorSaving] = useState(null);
 
   const handleSave = useCallback(async () => {
+    const procedureType = getValues('procedureType');
     const startDateTime = getValues('startDateTime');
     const endDateTime = getValues('endDateTime');
     const notes = getValues('notes');
 
     const payload = {
       patient: patientUuid,
-      procedureCoded: procedureField.selectedConcept?.uuid,
-      procedureType: selectedProcedureType?.uuid,
-      bodySite: bodySiteField.selectedConcept?.uuid,
+      procedureCoded: procedureField.selectedConcept!.uuid,
+      procedureType: procedureType,
+      bodySite: bodySiteField.selectedConcept!.uuid,
       startDateTime: startDateTime ? dayjs(startDateTime).format() : undefined,
       endDateTime: endDateTime ? dayjs(endDateTime).format() : undefined,
       status: statusField.selectedConcept?.uuid,
-      notes: notes || undefined,
+      notes: notes,
     };
 
     try {
@@ -109,7 +109,6 @@ const ProceduresFormComponent: React.FC<ProceduresFormComponentProps> = ({
     mutate,
     patientUuid,
     procedureField.selectedConcept,
-    selectedProcedureType,
     statusField.selectedConcept,
     t,
   ]);
@@ -120,15 +119,17 @@ const ProceduresFormComponent: React.FC<ProceduresFormComponentProps> = ({
     <Form className={styles.form} onSubmit={handleSubmit(handleSave, onError)}>
       <div className={styles.formContainer}>
         <Stack gap={7}>
-          <FormGroup legendText={<RequiredFieldLabel label={t('procedure', 'Procedure')} t={t} />}>
+          <FormGroup legendText={<RequiredFieldLabel label={t('procedure', 'Procedure')} />}>
             <ConceptSearchField
               label={t('enterProcedure', 'Enter procedure')}
               placeholder={t('searchProcedures', 'Search procedures')}
               field={procedureField}
+              onChange={(selectedConcept) => setValue('procedureCoded', selectedConcept.uuid)}
             />
+            {errors.procedureCoded && <p className={styles.errorMessage}>{errors.procedureCoded.message}</p>}
           </FormGroup>
 
-          <FormGroup legendText={t('procedureType', 'Procedure type')}>
+          <FormGroup legendText={<RequiredFieldLabel label={t('procedureType', 'Procedure type')} />}>
             {isLoadingProcedureTypes ? (
               <InlineLoading className={styles.loader} description={t('loading', 'Loading') + '...'} />
             ) : (
@@ -140,20 +141,23 @@ const ProceduresFormComponent: React.FC<ProceduresFormComponentProps> = ({
                   items={procedureTypes}
                   itemToString={(item: ProcedureType) => item?.name ?? ''}
                   onChange={({ selectedItem }: { selectedItem: ProcedureType }) =>
-                    setSelectedProcedureType(selectedItem)
+                    setValue('procedureType', selectedItem.uuid)
                   }
                   selectedItem={selectedProcedureType}
                 />
               </ResponsiveWrapper>
             )}
+            {errors.procedureType && <p className={styles.errorMessage}>{errors.procedureType.message}</p>}
           </FormGroup>
 
-          <FormGroup legendText={t('bodySite', 'Body site')}>
+          <FormGroup legendText={<RequiredFieldLabel label={t('bodySite', 'Body site')} />}>
             <ConceptSearchField
               label={t('enterBodySite', 'Enter body site')}
               placeholder={t('searchBodySites', 'Search body sites')}
               field={bodySiteField}
+              onChange={(selectedConcept) => setValue('bodySite', selectedConcept.uuid)}
             />
+            {errors.bodySite && <p className={styles.errorMessage}>{errors.bodySite.message}</p>}
           </FormGroup>
 
           <FormGroup legendText={t('startDate', 'Start date')}>
@@ -171,6 +175,7 @@ const ProceduresFormComponent: React.FC<ProceduresFormComponentProps> = ({
                 </ResponsiveWrapper>
               )}
             />
+            {errors.startDateTime && <p className={styles.errorMessage}>{errors.startDateTime.message}</p>}
           </FormGroup>
 
           <FormGroup legendText={t('endDate', 'End date')}>
@@ -188,14 +193,17 @@ const ProceduresFormComponent: React.FC<ProceduresFormComponentProps> = ({
                 </ResponsiveWrapper>
               )}
             />
+            {errors.endDateTime && <p className={styles.errorMessage}>{errors.endDateTime.message}</p>}
           </FormGroup>
 
-          <FormGroup legendText={t('status', 'Status')}>
+          <FormGroup legendText={<RequiredFieldLabel label={t('status', 'Status')} />}>
             <ConceptSearchField
               label={t('enterStatus', 'Enter status')}
               placeholder={t('searchStatus', 'Search status')}
               field={statusField}
+              onChange={(selectedConcept) => setValue('status', selectedConcept.uuid)}
             />
+            {errors.status && <p className={styles.errorMessage}>{errors.status.message}</p>}
           </FormGroup>
 
           <FormGroup legendText={t('notes', 'Notes')}>
@@ -213,6 +221,7 @@ const ProceduresFormComponent: React.FC<ProceduresFormComponentProps> = ({
                 </ResponsiveWrapper>
               )}
             />
+            {errors.notes && <p className={styles.errorMessage}>{errors.notes.message}</p>}
           </FormGroup>
         </Stack>
       </div>
@@ -245,7 +254,8 @@ const ProceduresFormComponent: React.FC<ProceduresFormComponentProps> = ({
   );
 };
 
-function RequiredFieldLabel({ label, t }: { label: string; t: (key: string, fallback: string) => string }) {
+function RequiredFieldLabel({ label }: { label: string }) {
+  const { t } = useTranslation();
   return (
     <span>
       {label}
@@ -260,10 +270,12 @@ function ConceptSearchField({
   label,
   placeholder,
   field,
+  onChange,
 }: {
   label: string;
   placeholder: string;
   field: ReturnType<typeof useConceptSearchField>;
+  onChange: (selectedConcept: ConceptResult) => void;
 }) {
   return (
     <>
@@ -285,6 +297,7 @@ function ConceptSearchField({
         onSelect={(result) => {
           field.setSelectedConcept(result);
           field.setSearchTerm('');
+          onChange(result);
         }}
       />
     </>
