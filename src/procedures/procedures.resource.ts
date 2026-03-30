@@ -2,26 +2,22 @@ import useSWR, { useSWRConfig } from 'swr';
 import { openmrsFetch, restBaseUrl, useDebounce } from '@openmrs/esm-framework';
 import { useState } from 'react';
 
-interface RawProcedure {
+interface Procedure {
   uuid: string;
   procedureCoded?: { display: string };
   procedureNonCoded?: string;
   procedureType?: { name: string };
+  bodySite?: { display: string };
   startDateTime: string;
+  endDateTime?: string;
+  estimatedStartDate?: string;
   status?: { display: string };
+  notes?: string;
   voided: boolean;
 }
 
-export interface Procedure {
-  uuid: string;
-  display: string;
-  procedureType: string;
-  startDateTime: string;
-  status: string;
-}
-
 interface ProcedureApiResponse {
-  results: Array<RawProcedure>;
+  results: Array<Procedure>;
   links: Array<{ rel: string; uri: string }>;
 }
 
@@ -94,11 +90,15 @@ export function useProcedures(patientUuid: string) {
       uuid: p.uuid,
       display: p.procedureCoded?.display ?? p.procedureNonCoded ?? '--',
       procedureType: p.procedureType?.name,
+      bodySite: p.bodySite?.display,
       startDateTime: p.startDateTime,
+      endDateTime: p.endDateTime,
+      isEstimated: Boolean(p.estimatedStartDate),
       status: p.status?.display,
+      notes: p.notes,
     }));
 
-  return { procedures: data ? procedures ?? [] : null, error, isLoading, isValidating };
+  return { procedures: data ? (procedures ?? []) : null, error, isLoading, isValidating };
 }
 
 export function useConceptSearchField(conceptClassUuid: string) {

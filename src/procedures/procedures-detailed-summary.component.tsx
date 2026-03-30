@@ -20,7 +20,10 @@ import {
   isDesktop as isDesktopLayout,
   launchWorkspace2,
   parseDate,
-  useLayoutType,CardHeader, EmptyCard, ErrorState
+  useLayoutType,
+  CardHeader,
+  EmptyCard,
+  ErrorState,
 } from '@openmrs/esm-framework';
 import { useProcedures } from './procedures.resource';
 import styles from './procedures-overview.scss';
@@ -42,7 +45,12 @@ function ProceduresDetailedSummary({ patient }: ProceduresDetailedSummaryProps) 
   const headers = useMemo(
     () => [
       { key: 'display', header: t('procedure', 'Procedure') },
-      { key: 'startDateTimeRender', header: t('date', 'Date') },
+      { key: 'procedureType', header: t('procedureType', 'Procedure type') },
+      { key: 'bodySite', header: t('bodySite', 'Body site') },
+      { key: 'startDateTimeRender', header: t('startDate', 'Start date') },
+      { key: 'endDateTimeRender', header: t('endDate', 'End date') },
+      { key: 'status', header: t('status', 'Status') },
+      { key: 'notes', header: t('notes', 'Notes') },
     ],
     [t],
   );
@@ -52,7 +60,14 @@ function ProceduresDetailedSummary({ patient }: ProceduresDetailedSummaryProps) 
       procedures?.map((p) => ({
         id: p.uuid,
         display: p.display,
-        startDateTimeRender: p.startDateTime ? formatDate(parseDate(p.startDateTime), { mode: 'wide' }) : '--',
+        procedureType: p.procedureType ?? '--',
+        bodySite: p.bodySite ?? '--',
+        startDateTimeRender: p.startDateTime
+          ? `${formatDate(parseDate(p.startDateTime), { mode: 'wide' })}${p.isEstimated ? ' (estimated)' : ''}`
+          : '--',
+        endDateTimeRender: p.endDateTime ? formatDate(parseDate(p.endDateTime), { mode: 'wide' }) : '--',
+        status: p.status ?? '--',
+        notes: p.notes ?? '--',
       })),
     [procedures],
   );
