@@ -90,7 +90,7 @@ function ProceduresDetailedSummary({ patient }: ProceduresDetailedSummaryProps) 
           endDateTimeRender: p.endDateTime ? formatDate(parseDate(p.endDateTime), { mode: 'wide' }) : '--',
           status: p.status.display,
           notes: p.notes,
-          duration: p.duration ? `${p.duration} ${p.durationUnit?.display ?? ''}`.trim() : null,
+          duration: p.duration ? `${p.duration} ${p.durationUnit?.display ?? ''}`.trim() : '--',
         })),
     [procedures],
   );
@@ -147,14 +147,14 @@ function ProceduresDetailedSummary({ patient }: ProceduresDetailedSummaryProps) 
                   </TableHead>
                   <TableBody>
                     {rows.map((row) => {
-                      const rowData = tableRows?.find((r) => r.id === row.id);
+                      const matchingRow = tableRows?.find((r) => r.id === row.id);
                       return (
                         <React.Fragment key={row.id}>
                           <TableExpandRow {...getRowProps({ row })}>
                             {row.cells.map((cell) => {
                               if (cell.info.header === 'startDateTimeRender') {
-                                const display = rowData?.estimatedStartDate
-                                  ? `${formatPartialDate(rowData.estimatedStartDate, { mode: 'wide' })}*`
+                                const display = matchingRow?.estimatedStartDate
+                                  ? `${formatPartialDate(matchingRow.estimatedStartDate, { mode: 'wide' })}*`
                                   : formatDate(parseDate(cell.value), { mode: 'wide', time: true });
                                 return <TableCell key={cell.id}>{display}</TableCell>;
                               }
@@ -168,11 +168,11 @@ function ProceduresDetailedSummary({ patient }: ProceduresDetailedSummaryProps) 
                           >
                             <p>
                               <strong>{t('duration', 'Duration')}: </strong>
-                              {rowData?.duration ?? '--'}
+                              {matchingRow?.duration ?? '--'}
                             </p>
                             <p>
                               <strong>{t('notes', 'Notes')}: </strong>
-                              {rowData?.notes ?? '--'}
+                              {matchingRow?.notes ?? '--'}
                             </p>
                           </TableExpandedRow>
                         </React.Fragment>
