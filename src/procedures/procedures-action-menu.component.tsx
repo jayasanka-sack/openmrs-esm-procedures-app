@@ -17,11 +17,10 @@ export const ProceduresActionMenu = ({ procedure, patientUuid }: ProceduresActio
   const launchEditConditionsForm = useCallback(
     () =>
       launchWorkspace2('procedures-form-workspace', {
-        workspaceTitle: t('editProcedure', 'Edit Procedure'),
         procedure,
         formContext: 'editing',
       }),
-    [procedure, t],
+    [procedure],
   );
 
   const launchDeleteConditionDialog = (procedureUuid: string) => {

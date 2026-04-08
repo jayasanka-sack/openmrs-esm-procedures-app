@@ -13,7 +13,7 @@ import { mockPatient } from 'tools';
 import { mockProcedureTypes, mockProceduresResponse, searchedProcedure } from '__mocks__';
 import { type ConfigObject, configSchema } from '../config-schema';
 import { saveProcedure, useConceptSearch, useConceptSearchField, useProcedureTypes } from './procedures.resource';
-import ProceduresForm from './procedures-form.workspace';
+import ProceduresForm, { type ProceduresFormProps } from './procedures-form.workspace';
 import { type ConceptReference } from '../types';
 
 jest.mock('./procedures.resource', () => ({
@@ -42,7 +42,7 @@ mockUseConfig.mockReturnValue({
   statusConceptClassUuid: '',
 });
 
-const defaultProps: PatientWorkspace2DefinitionProps<object, object> = {
+const defaultProps: PatientWorkspace2DefinitionProps<ProceduresFormProps, object> = {
   closeWorkspace: jest.fn(),
   groupProps: {
     patientUuid: mockPatient.id,
@@ -52,7 +52,7 @@ const defaultProps: PatientWorkspace2DefinitionProps<object, object> = {
   },
   workspaceName: '',
   launchChildWorkspace: jest.fn(),
-  workspaceProps: {},
+  workspaceProps: { formContext: 'creating' },
   windowProps: {},
   windowName: '',
   isRootWorkspace: false,

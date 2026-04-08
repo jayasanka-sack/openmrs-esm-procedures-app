@@ -1,6 +1,6 @@
 import useSWR, { useSWRConfig } from 'swr';
 import { openmrsFetch, restBaseUrl, useDebounce } from '@openmrs/esm-framework';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   type ConceptReference,
   type ProcedureApiResponse,
@@ -25,8 +25,15 @@ export function useConceptSearch(query: string, conceptClassUuid: string) {
 }
 
 export async function saveProcedure(payload: RawProcedure) {
-  const url = `${restBaseUrl}/procedure`;
-  return openmrsFetch(url, {
+  return openmrsFetch(`${restBaseUrl}/procedure`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: payload,
+  });
+}
+
+export async function updateProcedure(procedureUuid: string, payload: RawProcedure) {
+  return openmrsFetch(`${restBaseUrl}/procedure/${procedureUuid}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: payload,
@@ -58,13 +65,27 @@ export async function deleteProcedure(procedureId: string) {
   });
 }
 
-export function useConceptSearchField(conceptClassUuid: string) {
+export function useConceptById(uuid: string) {
+  const url = uuid ? `${restBaseUrl}/concept/${uuid}?v=custom:(uuid,display)` : null;
+  const { data } = useSWR<{ data: ConceptReference }, Error>(url, openmrsFetch);
+  return data?.data ?? null;
+}
+
+export function useConceptSearchField(conceptClassUuid: string, initialValue: string) {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedConcept, setSelectedConcept] = useState<ConceptReference | null>(null);
 
   const debouncedSearchTerm = useDebounce(searchTerm);
 
   const { searchResults, isSearching } = useConceptSearch(debouncedSearchTerm, conceptClassUuid);
+
+  const initialConceptData = useConceptById(initialValue);
+
+  useEffect(() => {
+    if (initialConceptData) {
+      setSelectedConcept(initialConceptData);
+    }
+  }, [initialConceptData]);
 
   const clear = () => {
     setSearchTerm('');

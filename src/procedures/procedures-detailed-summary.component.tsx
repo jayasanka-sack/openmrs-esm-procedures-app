@@ -58,7 +58,10 @@ function ProceduresDetailedSummary({ patient }: ProceduresDetailedSummaryProps) 
   const displayText = t('procedures_lower', 'procedures');
   const layout = useLayoutType();
   const isDesktop = isDesktopLayout(layout);
-  const launchProceduresForm = useCallback(() => launchWorkspace2('procedures-form-workspace'), []);
+  const launchProceduresForm = useCallback(
+    () => launchWorkspace2('procedures-form-workspace', { formContext: 'creating' }),
+    [],
+  );
 
   const { procedures, error, isLoading, isValidating } = useProcedures(patient.id);
   const [currentPage, setCurrentPage] = useState(1);
@@ -142,6 +145,7 @@ function ProceduresDetailedSummary({ patient }: ProceduresDetailedSummaryProps) 
                           {header.header}
                         </TableHeader>
                       ))}
+                      <TableHeader />
                     </TableRow>
                   </TableHead>
                   <TableBody>

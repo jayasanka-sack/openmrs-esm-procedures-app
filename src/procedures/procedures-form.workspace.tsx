@@ -3,9 +3,15 @@ import { useTranslation } from 'react-i18next';
 import { useForm, FormProvider } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { useLayoutType, Workspace2 } from '@openmrs/esm-framework';
+import { Workspace2 } from '@openmrs/esm-framework';
 import { type PatientWorkspace2DefinitionProps } from '@openmrs/esm-patient-common-lib';
 import ProceduresFormComponent from './procedures-form.component';
+import { type Procedure } from '../types';
+
+export type ProceduresFormProps = {
+  procedure?: Procedure;
+  formContext: 'creating' | 'editing';
+};
 
 const schema = z
   .object({
@@ -30,9 +36,10 @@ const schema = z
 
 export type ProceduresFormSchema = z.infer<typeof schema>;
 
-const ProceduresForm: React.FC<PatientWorkspace2DefinitionProps<object, object>> = ({
+const ProceduresForm: React.FC<PatientWorkspace2DefinitionProps<ProceduresFormProps, object>> = ({
   closeWorkspace,
   groupProps: { patientUuid },
+  workspaceProps: { procedure, formContext },
 }) => {
   const { t } = useTranslation();
   const [isSubmittingForm, setIsSubmittingForm] = useState(false);
@@ -41,14 +48,14 @@ const ProceduresForm: React.FC<PatientWorkspace2DefinitionProps<object, object>>
     mode: 'all',
     resolver: zodResolver(schema),
     defaultValues: {
-      procedureCoded: '',
-      procedureType: '',
-      bodySite: '',
-      startDateTime: null,
-      endDateTime: null,
-      status: '',
-      notes: '',
-      estimatedStartDate: '',
+      procedureCoded: procedure?.procedureCoded?.uuid ?? '',
+      procedureType: procedure?.procedureType?.uuid ?? '',
+      bodySite: procedure?.bodySite?.uuid ?? '',
+      startDateTime: procedure?.startDateTime ? new Date(procedure.startDateTime) : null,
+      endDateTime: procedure?.endDateTime ? new Date(procedure.endDateTime) : null,
+      status: procedure?.status?.uuid ?? '',
+      notes: procedure?.notes ?? '',
+      estimatedStartDate: procedure?.estimatedStartDate ?? '',
     },
   });
 
@@ -57,12 +64,18 @@ const ProceduresForm: React.FC<PatientWorkspace2DefinitionProps<object, object>>
   }, [closeWorkspace]);
 
   return (
-    <Workspace2 title={t('recordProcedure', 'Record procedure')} hasUnsavedChanges={methods.formState.isDirty}>
+    <Workspace2
+      title={
+        formContext === 'editing' ? t('editProcedure', 'Edit procedure') : t('recordProcedure', 'Record procedure')
+      }
+      hasUnsavedChanges={methods.formState.isDirty}
+    >
       <FormProvider {...methods}>
         <ProceduresFormComponent
           closeWorkspaceWithSavedChanges={closeWorkspaceWithSavedChanges}
           isSubmittingForm={isSubmittingForm}
           patientUuid={patientUuid}
+          procedure={procedure}
         />
       </FormProvider>
     </Workspace2>

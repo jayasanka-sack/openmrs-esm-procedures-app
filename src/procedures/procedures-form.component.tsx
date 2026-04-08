@@ -25,17 +25,19 @@ import { OpenmrsDatePicker, ResponsiveWrapper, showSnackbar, useConfig, useLayou
 import { type ConfigObject } from '../config-schema';
 import {
   saveProcedure,
+  updateProcedure,
   useConceptSearchField,
   useMutatePatientProcedures,
   useProcedureTypes,
 } from './procedures.resource';
 import { type ProceduresFormSchema } from './procedures-form.workspace';
 import styles from './procedures-form.scss';
-import { type ProcedureType, type ConceptReference } from '../types';
+import { type ProcedureType, type ConceptReference, type Procedure } from '../types';
 
 interface ProceduresFormComponentProps {
   closeWorkspaceWithSavedChanges: () => void;
   isSubmittingForm: boolean;
+  procedure?: Procedure;
   patientUuid: string;
 }
 
@@ -50,6 +52,7 @@ interface ConceptSearchResultsProps {
 const ProceduresFormComponent: React.FC<ProceduresFormComponentProps> = ({
   closeWorkspaceWithSavedChanges,
   patientUuid,
+  procedure,
 }) => {
   const { t } = useTranslation();
   const { procedureCodedConceptClassUuid, bodySiteConceptClassUuid, statusConceptClassUuid } =
@@ -68,9 +71,10 @@ const ProceduresFormComponent: React.FC<ProceduresFormComponentProps> = ({
 
   const isTablet = useLayoutType() === 'tablet';
   const [isSubmittingForm, setIsSubmittingForm] = useState(false);
-  const [isStartDateKnown, setIsStartDateKnown] = useState(true);
-  const [estimatedYear, setEstimatedYear] = useState('');
-  const [estimatedMonth, setEstimatedMonth] = useState('');
+  const [isStartDateKnown, setIsStartDateKnown] = useState(!getValues('estimatedStartDate'));
+  const initialEstimatedDate = getValues('estimatedStartDate');
+  const [estimatedYear, setEstimatedYear] = useState(initialEstimatedDate?.split('-')[0] ?? '');
+  const [estimatedMonth, setEstimatedMonth] = useState(initialEstimatedDate?.split('-')[1] ?? '');
 
   const currentYear = new Date().getFullYear();
   const years = Array.from({ length: currentYear - 1900 + 1 }, (_, i) => String(currentYear - i));
@@ -89,9 +93,9 @@ const ProceduresFormComponent: React.FC<ProceduresFormComponentProps> = ({
     { value: '12', label: 'December' },
   ];
 
-  const procedureField = useConceptSearchField(procedureCodedConceptClassUuid);
-  const bodySiteField = useConceptSearchField(bodySiteConceptClassUuid);
-  const statusField = useConceptSearchField(statusConceptClassUuid);
+  const procedureField = useConceptSearchField(procedureCodedConceptClassUuid, getValues('procedureCoded'));
+  const bodySiteField = useConceptSearchField(bodySiteConceptClassUuid, getValues('bodySite'));
+  const statusField = useConceptSearchField(statusConceptClassUuid, getValues('status'));
 
   const [errorSaving, setErrorSaving] = useState(null);
 
@@ -111,15 +115,19 @@ const ProceduresFormComponent: React.FC<ProceduresFormComponentProps> = ({
       procedureCoded: procedureField.selectedConcept!.uuid,
       procedureType: procedureType,
       bodySite: bodySiteField.selectedConcept!.uuid,
-      startDateTime: isStartDateKnown && startDateTime ? dayjs(startDateTime).format() : undefined,
-      endDateTime: endDateTime ? dayjs(endDateTime).format() : undefined,
+      startDateTime: isStartDateKnown && startDateTime ? dayjs(startDateTime).format() : null,
+      endDateTime: endDateTime ? dayjs(endDateTime).format() : null,
       status: statusField.selectedConcept?.uuid,
       notes: notes,
-      estimatedStartDate: estimatedStartDate,
+      estimatedStartDate: estimatedStartDate || null,
     };
 
     try {
-      await saveProcedure(payload);
+      if (procedure?.uuid) {
+        await updateProcedure(procedure.uuid, payload);
+      } else {
+        await saveProcedure(payload);
+      }
       await mutate();
       showSnackbar({
         kind: 'success',
@@ -142,6 +150,7 @@ const ProceduresFormComponent: React.FC<ProceduresFormComponentProps> = ({
     patientUuid,
     procedureField.selectedConcept,
     statusField.selectedConcept,
+    procedure.uuid,
     t,
   ]);
 
@@ -172,6 +181,7 @@ const ProceduresFormComponent: React.FC<ProceduresFormComponentProps> = ({
                   placeholder={t('selectProcedureType', 'Select procedure type')}
                   items={procedureTypes}
                   itemToString={(item: ProcedureType) => item?.name ?? ''}
+                  initialSelectedItem={procedureTypes.find((pt) => pt.uuid === getValues('procedureType')) ?? null}
                   onChange={({ selectedItem }: { selectedItem: ProcedureType | null }) =>
                     setValue('procedureType', selectedItem.uuid)
                   }
