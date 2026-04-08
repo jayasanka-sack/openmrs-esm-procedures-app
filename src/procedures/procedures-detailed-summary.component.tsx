@@ -9,6 +9,9 @@ import {
   TableBody,
   TableCell,
   TableContainer,
+  TableExpandedRow,
+  TableExpandHeader,
+  TableExpandRow,
   TableHead,
   TableHeader,
   TableRow,
@@ -72,6 +75,8 @@ function ProceduresDetailedSummary({ patient }: ProceduresDetailedSummaryProps) 
           : formatDate(parseDate(p.startDateTime), { mode: 'wide', time: true }),
         endDateTimeRender: p.endDateTime ? formatDate(parseDate(p.endDateTime), { mode: 'wide' }) : '--',
         status: p.status.display,
+        notes: p.notes,
+        duration: p.duration ? `${p.duration} ${p.durationUnit?.display ?? ''}` : null,
       })),
     [procedures],
   );
@@ -111,12 +116,13 @@ function ProceduresDetailedSummary({ patient }: ProceduresDetailedSummaryProps) 
           size={isDesktop ? 'sm' : 'lg'}
           useZebraStyles
         >
-          {({ rows, headers, getHeaderProps, getTableProps }) => (
+          {({ rows, headers, getRowProps, getExpandedRowProps, getHeaderProps, getTableProps }) => (
             <>
               <TableContainer>
                 <Table {...getTableProps()} className={styles.table}>
                   <TableHead>
                     <TableRow>
+                      <TableExpandHeader aria-label="expand row" />
                       {headers.map((header) => (
                         <TableHeader {...getHeaderProps({ header })} key={header.key}>
                           {header.header}
@@ -125,13 +131,32 @@ function ProceduresDetailedSummary({ patient }: ProceduresDetailedSummaryProps) 
                     </TableRow>
                   </TableHead>
                   <TableBody>
-                    {rows.map((row) => (
-                      <TableRow key={row.id}>
-                        {row.cells.map((cell) => (
-                          <TableCell key={cell.id}>{cell.value}</TableCell>
-                        ))}
-                      </TableRow>
-                    ))}
+                    {rows.map((row) => {
+                      const rowData = tableRows?.find((r) => r.id === row.id);
+                      return (
+                        <React.Fragment key={row.id}>
+                          <TableExpandRow {...getRowProps({ row })}>
+                            {row.cells.map((cell) => (
+                              <TableCell key={cell.id}>{cell.value}</TableCell>
+                            ))}
+                          </TableExpandRow>
+                          <TableExpandedRow
+                            colSpan={headers.length + 2}
+                            className="demo-expanded-td"
+                            {...getExpandedRowProps({ row })}
+                          >
+                            <p>
+                              <strong>{t('duration', 'Duration')}: </strong>
+                              {rowData?.duration ?? '--'}
+                            </p>
+                            <p>
+                              <strong>{t('notes', 'Notes')}: </strong>
+                              {rowData?.notes ?? '--'}
+                            </p>
+                          </TableExpandedRow>
+                        </React.Fragment>
+                      );
+                    })}
                   </TableBody>
                 </Table>
               </TableContainer>
