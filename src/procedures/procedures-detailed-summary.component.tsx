@@ -24,12 +24,13 @@ import {
   CardHeader,
   EmptyCard,
   ErrorState,
+  formatPartialDate,
 } from '@openmrs/esm-framework';
 import { useProcedures } from './procedures.resource';
 import { PatientChartPagination } from '../common-lib-components/pagination/pagination.component';
 import styles from './procedures-overview.scss';
 
-const DEFAULT_PAGE_SIZE = 10;
+const DEFAULT_PAGE_SIZE = 20;
 
 interface ProceduresDetailedSummaryProps {
   patient: fhir.Patient;
@@ -55,7 +56,6 @@ function ProceduresDetailedSummary({ patient }: ProceduresDetailedSummaryProps) 
       { key: 'startDateTimeRender', header: t('startDate', 'Start date') },
       { key: 'endDateTimeRender', header: t('endDate', 'End date') },
       { key: 'status', header: t('status', 'Status') },
-      { key: 'notes', header: t('notes', 'Notes') },
     ],
     [t],
   );
@@ -65,14 +65,13 @@ function ProceduresDetailedSummary({ patient }: ProceduresDetailedSummaryProps) 
       procedures?.map((p) => ({
         id: p.uuid,
         display: p.display,
-        procedureType: p.procedureType ?? '--',
-        bodySite: p.bodySite ?? '--',
-        startDateTimeRender: p.startDateTime
-          ? `${formatDate(parseDate(p.startDateTime), { mode: 'wide' })}${p.isEstimated ? ' (estimated)' : ''}`
-          : '--',
+        procedureType: p.procedureType.name,
+        bodySite: p.bodySite.display ?? '--',
+        startDateTimeRender: p.estimatedStartDate
+          ? `${formatPartialDate(p.estimatedStartDate, { mode: 'wide' })}*`
+          : formatDate(parseDate(p.startDateTime), { mode: 'wide', time: true }),
         endDateTimeRender: p.endDateTime ? formatDate(parseDate(p.endDateTime), { mode: 'wide' }) : '--',
-        status: p.status ?? '--',
-        notes: p.notes ?? '--',
+        status: p.status.display,
       })),
     [procedures],
   );

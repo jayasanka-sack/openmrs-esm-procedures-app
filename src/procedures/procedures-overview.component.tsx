@@ -22,12 +22,16 @@ import {
   parseDate,
   useConfig,
   useLayoutType,
-  usePagination,CardHeader, EmptyCard, ErrorState
+  usePagination,
+  CardHeader,
+  EmptyCard,
+  ErrorState,
+  formatPartialDate,
 } from '@openmrs/esm-framework';
 import { type ConfigObject } from '../config-schema';
 import { useProcedures } from './procedures.resource';
 import styles from './procedures-overview.scss';
-import {PatientChartPagination} from "../common-lib-components/pagination";
+import { PatientChartPagination } from '../common-lib-components/pagination';
 
 interface ProceduresOverviewProps {
   patientUuid: string;
@@ -59,7 +63,9 @@ const ProceduresOverview: React.FC<ProceduresOverviewProps> = ({ patientUuid }) 
       procedures?.map((p) => ({
         id: p.uuid,
         display: p.display,
-        startDateTimeRender: p.startDateTime ? formatDate(parseDate(p.startDateTime), { mode: 'wide' }) : '--',
+        startDateTimeRender: p.estimatedStartDate
+          ? `${formatPartialDate(p.estimatedStartDate, { mode: 'wide' })}*`
+          : formatDate(parseDate(p.startDateTime), { mode: 'wide', time: true }),
       })),
     [procedures],
   );

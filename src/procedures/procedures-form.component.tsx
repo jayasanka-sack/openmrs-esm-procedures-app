@@ -24,8 +24,6 @@ import { Controller, useFormContext } from 'react-hook-form';
 import { OpenmrsDatePicker, ResponsiveWrapper, showSnackbar, useConfig, useLayoutType } from '@openmrs/esm-framework';
 import { type ConfigObject } from '../config-schema';
 import {
-  type ConceptResult,
-  type ProcedureType,
   saveProcedure,
   useConceptSearchField,
   useMutatePatientProcedures,
@@ -33,6 +31,7 @@ import {
 } from './procedures.resource';
 import { type ProceduresFormSchema } from './procedures-form.workspace';
 import styles from './procedures-form.scss';
+import { type ProcedureType, type ConceptReference } from '../types';
 
 interface ProceduresFormComponentProps {
   closeWorkspaceWithSavedChanges: () => void;
@@ -42,9 +41,9 @@ interface ProceduresFormComponentProps {
 
 interface ConceptSearchResultsProps {
   isSearching: boolean;
-  onSelect: (result: ConceptResult) => void;
-  searchResults: Array<ConceptResult>;
-  selectedItem: ConceptResult;
+  onSelect: (result: ConceptReference) => void;
+  searchResults: Array<ConceptReference>;
+  selectedItem: ConceptReference;
   value: string;
 }
 
@@ -354,7 +353,7 @@ function ConceptSearchField({
   label: string;
   placeholder: string;
   field: ReturnType<typeof useConceptSearchField>;
-  onChange: (selectedConcept: ConceptResult) => void;
+  onChange: (selectedConcept: ConceptReference) => void;
 }) {
   return (
     <>

@@ -1,51 +1,7 @@
 import useSWR, { useSWRConfig } from 'swr';
 import { openmrsFetch, restBaseUrl, useDebounce } from '@openmrs/esm-framework';
 import { useState } from 'react';
-
-interface Procedure {
-  uuid: string;
-  procedureCoded?: { display: string };
-  procedureNonCoded?: string;
-  procedureType?: { name: string };
-  bodySite?: { display: string };
-  startDateTime: string;
-  endDateTime?: string;
-  estimatedStartDate?: string;
-  status?: { display: string };
-  notes?: string;
-  voided: boolean;
-}
-
-interface ProcedureApiResponse {
-  results: Array<Procedure>;
-  links: Array<{ rel: string; uri: string }>;
-}
-
-export interface ProcedureType {
-  uuid: string;
-  name: string;
-  description?: string;
-}
-
-export interface ConceptResult {
-  uuid: string;
-  display: string;
-}
-
-export interface ProcedurePayload {
-  patient: string;
-  procedureCoded?: string;
-  procedureType?: string;
-  bodySite?: string;
-  startDateTime?: string;
-  endDateTime?: string;
-  status?: string;
-  notes?: string;
-}
-
-interface ProcedureTypeApiResponse {
-  results: Array<ProcedureType>;
-}
+import { type ProcedureApiResponse, type ProcedureTypeApiResponse, type RawProcedure, type ConceptReference } from '../types';
 
 export function useProcedureTypes() {
   const url = `${restBaseUrl}/proceduretype?v=full`;
@@ -56,14 +12,14 @@ export function useProcedureTypes() {
 export function useConceptSearch(query: string, conceptClassUuid: string) {
   const classParam = conceptClassUuid ? `&class=${conceptClassUuid}` : '';
   const url = `${restBaseUrl}/concept?name=${query}&searchType=fuzzy${classParam}&v=custom:(uuid,display)`;
-  const { data, error, isLoading } = useSWR<{ data: { results: Array<ConceptResult> } }, Error>(
+  const { data, error, isLoading } = useSWR<{ data: { results: ConceptReference[] } }, Error>(
     query ? url : null,
     openmrsFetch,
   );
   return { searchResults: data?.data?.results ?? [], isSearching: isLoading };
 }
 
-export async function saveProcedure(payload: ProcedurePayload) {
+export async function saveProcedure(payload: RawProcedure) {
   const url = `${restBaseUrl}/procedure`;
   return openmrsFetch(url, {
     method: 'POST',
@@ -83,27 +39,12 @@ export function useProcedures(patientUuid: string) {
     patientUuid ? url : null,
     openmrsFetch,
   );
-
-  const procedures = data?.data?.results
-    ?.filter((p) => !p.voided)
-    .map((p) => ({
-      uuid: p.uuid,
-      display: p.procedureCoded?.display ?? p.procedureNonCoded ?? '--',
-      procedureType: p.procedureType?.name,
-      bodySite: p.bodySite?.display,
-      startDateTime: p.startDateTime,
-      endDateTime: p.endDateTime,
-      isEstimated: Boolean(p.estimatedStartDate),
-      status: p.status?.display,
-      notes: p.notes,
-    }));
-
-  return { procedures: data ? (procedures ?? []) : null, error, isLoading, isValidating };
+  return { procedures: data ? (data.data?.results ?? []) : null, error, isLoading, isValidating };
 }
 
 export function useConceptSearchField(conceptClassUuid: string) {
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedConcept, setSelectedConcept] = useState<ConceptResult | null>(null);
+  const [selectedConcept, setSelectedConcept] = useState<ConceptReference | null>(null);
 
   const debouncedSearchTerm = useDebounce(searchTerm);
 

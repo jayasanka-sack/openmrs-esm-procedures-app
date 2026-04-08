@@ -12,14 +12,9 @@ import { type PatientWorkspace2DefinitionProps } from '@openmrs/esm-patient-comm
 import { mockPatient } from 'tools';
 import { mockProcedureTypes, mockProceduresResponse, searchedProcedure } from '__mocks__';
 import { type ConfigObject, configSchema } from '../config-schema';
-import {
-  type ConceptResult,
-  saveProcedure,
-  useConceptSearch,
-  useConceptSearchField,
-  useProcedureTypes,
-} from './procedures.resource';
+import { saveProcedure, useConceptSearch, useConceptSearchField, useProcedureTypes } from './procedures.resource';
 import ProceduresForm from './procedures-form.workspace';
+import { type ConceptReference } from '../types';
 
 jest.mock('./procedures.resource', () => ({
   ...jest.requireActual('./procedures.resource'),
@@ -74,7 +69,7 @@ beforeEach(() => {
   mockOpenmrsFetch.mockResolvedValue({ data: { results: [] } } as FetchResponse);
   mockUseConceptSearchField.mockImplementation(() => {
     const [searchTerm, setSearchTerm] = React.useState('');
-    const [selectedConcept, setSelectedConcept] = React.useState<ConceptResult | null>(null);
+    const [selectedConcept, setSelectedConcept] = React.useState<ConceptReference | null>(null);
     const { searchResults, isSearching } = mockUseConceptSearch(searchTerm, '');
     return {
       searchTerm,
