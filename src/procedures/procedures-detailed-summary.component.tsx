@@ -35,9 +35,22 @@ import styles from './procedures-overview.scss';
 
 const DEFAULT_PAGE_SIZE = 20;
 
-interface ProceduresDetailedSummaryProps {
+type ProceduresDetailedSummaryProps = {
   patient: fhir.Patient;
-}
+};
+
+type ProcedureTableRow = {
+  id: string;
+  display: string;
+  procedureType: string;
+  bodySite: string;
+  startDateTimeRender: string;
+  estimatedStartDate?: string;
+  endDateTimeRender: string;
+  status: string;
+  notes?: string;
+  duration?: string;
+};
 
 function ProceduresDetailedSummary({ patient }: ProceduresDetailedSummaryProps) {
   const { t } = useTranslation();
@@ -63,20 +76,19 @@ function ProceduresDetailedSummary({ patient }: ProceduresDetailedSummaryProps) 
     [t],
   );
 
-  const allRows = useMemo(
+  const allRows: ProcedureTableRow[] = useMemo(
     () =>
       procedures?.map((p) => ({
         id: p.uuid,
         display: p.display,
         procedureType: p.procedureType.name,
         bodySite: p.bodySite.display ?? '--',
-        startDateTimeRender: p.estimatedStartDate
-          ? `${formatPartialDate(p.estimatedStartDate, { mode: 'wide' })}*`
-          : formatDate(parseDate(p.startDateTime), { mode: 'wide', time: true }),
+        startDateTimeRender: p.estimatedStartDate ?? p.startDateTime,
+        estimatedStartDate: p.estimatedStartDate,
         endDateTimeRender: p.endDateTime ? formatDate(parseDate(p.endDateTime), { mode: 'wide' }) : '--',
         status: p.status.display,
         notes: p.notes,
-        duration: p.duration ? `${p.duration} ${p.durationUnit?.display ?? ''}` : null,
+        duration: p.duration ? `${p.duration} ${p.durationUnit?.display ?? ''}`.trim() : null,
       })),
     [procedures],
   );
@@ -111,19 +123,20 @@ function ProceduresDetailedSummary({ patient }: ProceduresDetailedSummaryProps) 
         <DataTable
           aria-label="procedures detailed summary"
           headers={headers}
+          isSortable
           overflowMenuOnHover={isDesktop}
           rows={tableRows}
           size={isDesktop ? 'sm' : 'lg'}
           useZebraStyles
         >
-          {({ rows, headers, getRowProps, getExpandedRowProps, getHeaderProps, getTableProps }) => (
+          {({ rows, headers: carbonHeaders, getRowProps, getExpandedRowProps, getHeaderProps, getTableProps }) => (
             <>
               <TableContainer>
                 <Table {...getTableProps()} className={styles.table}>
                   <TableHead>
                     <TableRow>
                       <TableExpandHeader aria-label="expand row" />
-                      {headers.map((header) => (
+                      {carbonHeaders.map((header) => (
                         <TableHeader {...getHeaderProps({ header })} key={header.key}>
                           {header.header}
                         </TableHeader>
@@ -136,9 +149,15 @@ function ProceduresDetailedSummary({ patient }: ProceduresDetailedSummaryProps) 
                       return (
                         <React.Fragment key={row.id}>
                           <TableExpandRow {...getRowProps({ row })}>
-                            {row.cells.map((cell) => (
-                              <TableCell key={cell.id}>{cell.value}</TableCell>
-                            ))}
+                            {row.cells.map((cell) => {
+                              if (cell.info.header === 'startDateTimeRender') {
+                                const display = rowData?.estimatedStartDate
+                                  ? `${formatPartialDate(rowData.estimatedStartDate, { mode: 'wide' })}*`
+                                  : formatDate(parseDate(cell.value), { mode: 'wide', time: true });
+                                return <TableCell key={cell.id}>{display}</TableCell>;
+                              }
+                              return <TableCell key={cell.id}>{cell.value}</TableCell>;
+                            })}
                           </TableExpandRow>
                           <TableExpandedRow
                             colSpan={headers.length + 2}
