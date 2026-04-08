@@ -1,7 +1,12 @@
 import useSWR, { useSWRConfig } from 'swr';
 import { openmrsFetch, restBaseUrl, useDebounce } from '@openmrs/esm-framework';
 import { useState } from 'react';
-import { type ProcedureApiResponse, type ProcedureTypeApiResponse, type RawProcedure, type ConceptReference } from '../types';
+import {
+  type ConceptReference,
+  type ProcedureApiResponse,
+  type ProcedureTypeApiResponse,
+  type RawProcedure,
+} from '../types';
 
 export function useProcedureTypes() {
   const url = `${restBaseUrl}/proceduretype?v=full`;
@@ -30,7 +35,8 @@ export async function saveProcedure(payload: RawProcedure) {
 
 export function useMutatePatientProcedures(patientUuid: string) {
   const { mutate } = useSWRConfig();
-  return () => mutate(`${restBaseUrl}/procedure?patient=${patientUuid}&v=full&limit=100`);
+  return () =>
+    mutate((key) => typeof key === 'string' && key.startsWith(`${restBaseUrl}/procedure?patient=${patientUuid}`));
 }
 
 export function useProcedures(patientUuid: string) {
@@ -40,6 +46,16 @@ export function useProcedures(patientUuid: string) {
     openmrsFetch,
   );
   return { procedures: data ? (data.data?.results ?? []) : null, error, isLoading, isValidating };
+}
+
+export async function deleteProcedure(procedureId: string) {
+  const controller = new AbortController();
+  const url = `${restBaseUrl}/procedure/${procedureId}`;
+
+  return await openmrsFetch(url, {
+    method: 'DELETE',
+    signal: controller.signal,
+  });
 }
 
 export function useConceptSearchField(conceptClassUuid: string) {

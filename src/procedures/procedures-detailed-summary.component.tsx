@@ -32,6 +32,7 @@ import {
 import { useProcedures } from './procedures.resource';
 import { PatientChartPagination } from '../common-lib-components/pagination/pagination.component';
 import styles from './procedures-overview.scss';
+import { ProceduresActionMenu } from './procedures-action-menu.component';
 
 const DEFAULT_PAGE_SIZE = 20;
 
@@ -49,7 +50,6 @@ type ProcedureTableRow = {
   endDateTimeRender: string;
   status: string;
   notes?: string;
-  duration?: string;
 };
 
 function ProceduresDetailedSummary({ patient }: ProceduresDetailedSummaryProps) {
@@ -90,7 +90,6 @@ function ProceduresDetailedSummary({ patient }: ProceduresDetailedSummaryProps) 
           endDateTimeRender: p.endDateTime ? formatDate(parseDate(p.endDateTime), { mode: 'wide' }) : '--',
           status: p.status.display,
           notes: p.notes,
-          duration: p.duration ? `${p.duration} ${p.durationUnit?.display ?? ''}`.trim() : '--',
         })),
     [procedures],
   );
@@ -148,6 +147,7 @@ function ProceduresDetailedSummary({ patient }: ProceduresDetailedSummaryProps) 
                   <TableBody>
                     {rows.map((row) => {
                       const matchingRow = tableRows?.find((r) => r.id === row.id);
+                      const matchingProcedure = procedures?.find((p) => p.uuid === row.id);
                       return (
                         <React.Fragment key={row.id}>
                           <TableExpandRow {...getRowProps({ row })}>
@@ -160,6 +160,9 @@ function ProceduresDetailedSummary({ patient }: ProceduresDetailedSummaryProps) 
                               }
                               return <TableCell key={cell.id}>{cell.value}</TableCell>;
                             })}
+                            <TableCell className="cds--table-column-menu">
+                              <ProceduresActionMenu procedure={matchingProcedure} patientUuid={patient.id} />
+                            </TableCell>
                           </TableExpandRow>
                           <TableExpandedRow
                             colSpan={headers.length + 2}
@@ -168,7 +171,9 @@ function ProceduresDetailedSummary({ patient }: ProceduresDetailedSummaryProps) 
                           >
                             <p>
                               <strong>{t('duration', 'Duration')}: </strong>
-                              {matchingRow?.duration ?? '--'}
+                              {matchingProcedure?.duration
+                                ? `${matchingProcedure.duration} ${matchingProcedure.durationUnit?.display ?? ''}`
+                                : '--'}
                             </p>
                             <p>
                               <strong>{t('notes', 'Notes')}: </strong>

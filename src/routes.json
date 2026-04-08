@@ -36,6 +36,10 @@
         "slot": "patient-chart-procedures-dashboard-slot",
         "path": "Procedures"
       }
+    },
+    {
+      "name": "procedure-delete-confirmation-dialog",
+      "component": "procedureDeleteConfirmationDialog"
     }
   ]
 }
