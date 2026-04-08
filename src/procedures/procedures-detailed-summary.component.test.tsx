@@ -4,7 +4,7 @@ import userEvent from '@testing-library/user-event';
 import { type FetchResponse, launchWorkspace2, openmrsFetch } from '@openmrs/esm-framework';
 import { mockPatient, renderWithSwr, waitForLoadingToFinish } from 'tools';
 import ProceduresDetailedSummary from './procedures-detailed-summary.component';
-import {mockProceduresResponse} from "../../__mocks__/procedures.mock";
+import { mockProceduresResponse } from '../../__mocks__/procedures.mock';
 
 const mockOpenmrsFetch = jest.mocked(openmrsFetch);
 const mockLaunchWorkspace2 = jest.mocked(launchWorkspace2);
@@ -51,9 +51,9 @@ describe('ProceduresDetailedSummary', () => {
 
     expect(screen.getByRole('heading', { name: /procedures/i })).toBeInTheDocument();
 
-    const expectedColumnHeaders = [/^procedure$/i, /^date$/i];
+    const expectedColumnHeaders = ['Procedure', 'Procedure type', 'Body site', 'Start date', 'End date', 'Status'];
     expectedColumnHeaders.forEach((header) => {
-      expect(screen.getByRole('columnheader', { name: header })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: header })).toBeInTheDocument();
     });
 
     // All 6 non-voided procedures should be displayed
@@ -62,12 +62,28 @@ describe('ProceduresDetailedSummary', () => {
       expect(screen.getByRole('row', { name: row })).toBeInTheDocument();
     });
 
-    // Header row + 6 data rows = 7; no pagination controls
-    expect(screen.getAllByRole('row').length).toEqual(7);
-    expect(screen.queryByRole('button', { name: /next page/i })).not.toBeInTheDocument();
+    // Header row + 6 data rows + 6 collapsed expanded rows (CSS not loaded in Jest) = 13
+    expect(screen.getAllByRole('row').length).toEqual(13);
+    expect(screen.getByRole('button', { name: /next page/i })).toBeDisabled();
 
     // Voided procedure should not appear
     expect(screen.queryByText(/Should Not Appear/i)).not.toBeInTheDocument();
+  });
+
+  it('renders duration and notes in the expanded row', async () => {
+    const user = userEvent.setup();
+
+    mockOpenmrsFetch.mockResolvedValueOnce({ data: mockProceduresResponse } as FetchResponse);
+
+    renderWithSwr(<ProceduresDetailedSummary patient={mockPatient} />);
+
+    await waitForLoadingToFinish();
+
+    const expandButtons = screen.getAllByRole('button', { name: /expand current row/i });
+    await user.click(expandButtons[0]);
+
+    expect(screen.getByText(/45 Minutes/i)).toBeInTheDocument();
+    expect(screen.getByText(/Procedure went well/i)).toBeInTheDocument();
   });
 
   it('renders an "Add" button that launches the procedures form workspace', async () => {
