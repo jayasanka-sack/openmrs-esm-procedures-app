@@ -150,7 +150,7 @@ const ProceduresFormComponent: React.FC<ProceduresFormComponentProps> = ({
     patientUuid,
     procedureField.selectedConcept,
     statusField.selectedConcept,
-    procedure.uuid,
+    procedure?.uuid,
     t,
   ]);
 

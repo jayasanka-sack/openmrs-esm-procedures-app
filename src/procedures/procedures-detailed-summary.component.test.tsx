@@ -4,7 +4,11 @@ import userEvent from '@testing-library/user-event';
 import { type FetchResponse, launchWorkspace2, openmrsFetch } from '@openmrs/esm-framework';
 import { mockPatient, renderWithSwr, waitForLoadingToFinish } from 'tools';
 import ProceduresDetailedSummary from './procedures-detailed-summary.component';
-import { mockProceduresResponse } from '../../__mocks__/procedures.mock';
+import { mockProceduresResponse } from '__mocks__';
+
+jest.mock('./procedures-action-menu.component', () => ({
+  ProceduresActionMenu: () => <div data-testid="procedures-action-menu" />,
+}));
 
 const mockOpenmrsFetch = jest.mocked(openmrsFetch);
 const mockLaunchWorkspace2 = jest.mocked(launchWorkspace2);
@@ -99,6 +103,6 @@ describe('ProceduresDetailedSummary', () => {
     expect(addButton).toBeInTheDocument();
 
     await user.click(addButton);
-    expect(mockLaunchWorkspace2).toHaveBeenCalledWith('procedures-form-workspace');
+    expect(mockLaunchWorkspace2).toHaveBeenCalledWith('procedures-form-workspace', { formContext: 'creating' });
   });
 });
