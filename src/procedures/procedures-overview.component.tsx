@@ -60,15 +60,13 @@ const ProceduresOverview: React.FC<ProceduresOverviewProps> = ({ patientUuid }) 
 
   const tableRows = useMemo(
     () =>
-      procedures
-        ?.filter((p) => !p.voided)
-        .map((p) => ({
-          id: p.uuid,
-          display: p.display ?? p.procedureNonCoded ?? '',
-          startDateTimeRender: p.estimatedStartDate
-            ? `${formatPartialDate(p.estimatedStartDate, { mode: 'wide' })}*`
-            : formatDate(parseDate(p.startDateTime), { mode: 'wide', time: true }),
-        })),
+      procedures?.map((p) => ({
+        id: p.uuid,
+        display: p.display ?? p.procedureNonCoded ?? '',
+        startDateTimeRender: p.estimatedStartDate
+          ? `${formatPartialDate(p.estimatedStartDate, { mode: 'wide' })}*`
+          : formatDate(parseDate(p.startDateTime), { mode: 'wide', time: true }),
+      })),
     [procedures],
   );
 
@@ -136,7 +134,7 @@ const ProceduresOverview: React.FC<ProceduresOverviewProps> = ({ patientUuid }) 
           onPageNumberChange={({ page }) => goTo(page)}
           pageNumber={currentPage}
           pageSize={procedurePageSize}
-          totalItems={tableRows?.length ?? 0}
+          totalItems={procedures.length}
           dashboardLinkUrl={pageUrl}
           dashboardLinkLabel={urlLabel}
         />

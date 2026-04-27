@@ -81,19 +81,17 @@ function ProceduresDetailedSummary({ patient }: ProceduresDetailedSummaryProps) 
 
   const allRows: ProcedureTableRow[] = useMemo(
     () =>
-      procedures
-        ?.filter((p) => !p.voided)
-        .map((p) => ({
-          id: p.uuid,
-          display: p.display,
-          procedureType: p.procedureType.name,
-          bodySite: p.bodySite.display ?? '--',
-          startDateTimeRender: p.estimatedStartDate ?? p.startDateTime,
-          estimatedStartDate: p.estimatedStartDate,
-          endDateTimeRender: p.endDateTime ? formatDate(parseDate(p.endDateTime), { mode: 'wide' }) : '--',
-          status: p.status.display,
-          notes: p.notes,
-        })),
+      procedures?.map((p) => ({
+        id: p.uuid,
+        display: p.display,
+        procedureType: p.procedureType.name,
+        bodySite: p.bodySite.display ?? '--',
+        startDateTimeRender: p.estimatedStartDate ?? p.startDateTime,
+        estimatedStartDate: p.estimatedStartDate,
+        endDateTimeRender: p.endDateTime ? formatDate(parseDate(p.endDateTime), { mode: 'wide' }) : '--',
+        status: p.status.display,
+        notes: p.notes,
+      })),
     [procedures],
   );
 
