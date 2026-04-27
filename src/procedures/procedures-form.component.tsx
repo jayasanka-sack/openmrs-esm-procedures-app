@@ -21,6 +21,7 @@ import {
   TextArea,
   Tile,
   TimePicker,
+  TimePickerSelect,
 } from '@carbon/react';
 import { Controller, useFormContext, type Control } from 'react-hook-form';
 import { OpenmrsDatePicker, ResponsiveWrapper, showSnackbar, useConfig, useLayoutType } from '@openmrs/esm-framework';
@@ -383,11 +384,23 @@ const ProceduresFormComponent: React.FC<ProceduresFormComponentProps> = ({
   );
 };
 
-const TIME_PATTERN = /^([01]?\d|2[0-3]):([0-5]\d)$/;
+const TIME_PATTERN = /^(1[0-2]|0?[1-9]):([0-5]\d)$/;
 
 function formatTime(date: Date | null | undefined): string {
   if (!date) return '';
-  return `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
+  const hours24 = date.getHours();
+  const hours12 = hours24 % 12 === 0 ? 12 : hours24 % 12;
+  return `${String(hours12).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
+}
+
+function getMeridiem(date: Date | null | undefined): 'AM' | 'PM' {
+  if (!date) return 'AM';
+  return date.getHours() >= 12 ? 'PM' : 'AM';
+}
+
+function to24Hour(hours12: number, meridiem: 'AM' | 'PM'): number {
+  if (meridiem === 'AM') return hours12 === 12 ? 0 : hours12;
+  return hours12 === 12 ? 12 : hours12 + 12;
 }
 
 function DateTimeField({
@@ -409,6 +422,7 @@ function DateTimeField({
         const dateValue = field.value ?? null;
         const errorText = fieldState?.error?.message;
         const invalid = Boolean(errorText);
+        const meridiem = getMeridiem(dateValue);
 
         const handleDateChange = (next: Date | null | undefined) => {
           if (!next) {
@@ -430,7 +444,17 @@ function DateTimeField({
           if (!match) return;
           const base = dateValue ?? new Date();
           const merged = new Date(base);
-          merged.setHours(Number(match[1]), Number(match[2]), 0, 0);
+          const hours12 = Number(match[1]);
+          merged.setHours(to24Hour(hours12, meridiem), Number(match[2]), 0, 0);
+          field.onChange(merged);
+        };
+
+        const handleMeridiemChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
+          if (!dateValue) return;
+          const next = event.target.value as 'AM' | 'PM';
+          if (next === meridiem) return;
+          const merged = new Date(dateValue);
+          merged.setHours((dateValue.getHours() + 12) % 24, dateValue.getMinutes(), 0, 0);
           field.onChange(merged);
         };
 
@@ -450,12 +474,23 @@ function DateTimeField({
               id={`${idPrefix}-time`}
               labelText={t('time', 'Time')}
               placeholder="hh:mm"
-              pattern="([01]?[0-9]|2[0-3]):[0-5][0-9]"
+              pattern="(1[0-2]|0?[1-9]):[0-5][0-9]"
               maxLength={5}
               defaultValue={formatTime(dateValue)}
               onChange={handleTimeChange}
               disabled={!dateValue}
-            />
+            >
+              <TimePickerSelect
+                id={`${idPrefix}-meridiem`}
+                aria-label={t('amPm', 'AM/PM')}
+                value={meridiem}
+                onChange={handleMeridiemChange}
+                disabled={!dateValue}
+              >
+                <SelectItem value="AM" text={t('am', 'AM')} />
+                <SelectItem value="PM" text={t('pm', 'PM')} />
+              </TimePickerSelect>
+            </TimePicker>
           </div>
         );
       }}

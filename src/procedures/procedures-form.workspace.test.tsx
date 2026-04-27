@@ -350,26 +350,31 @@ describe('ProceduresForm', () => {
     const startGroup = screen.getByRole('group', { name: /start date and time/i });
     expect(within(startGroup).getByLabelText(/^date$/i)).toBeInTheDocument();
     expect(within(startGroup).getByLabelText(/^time$/i)).toBeInTheDocument();
+    expect(within(startGroup).getByLabelText(/am\/pm/i)).toBeInTheDocument();
 
     const endGroup = screen.getByRole('group', { name: /end date and time/i });
     expect(within(endGroup).getByLabelText(/^date$/i)).toBeInTheDocument();
     expect(within(endGroup).getByLabelText(/^time$/i)).toBeInTheDocument();
+    expect(within(endGroup).getByLabelText(/am\/pm/i)).toBeInTheDocument();
   });
 
-  it('disables the TimePicker until a date is picked', () => {
+  it('disables the TimePicker and AM/PM select until a date is picked', () => {
     renderProceduresForm();
 
     const startGroup = screen.getByRole('group', { name: /start date and time/i });
     const startTimeInput = within(startGroup).getByLabelText(/^time$/i);
+    const startMeridiemSelect = within(startGroup).getByLabelText(/am\/pm/i);
     expect(startTimeInput).toBeDisabled();
+    expect(startMeridiemSelect).toBeDisabled();
 
     const startDateInput = within(startGroup).getByLabelText(/^date$/i);
     fireEvent.change(startDateInput, { target: { value: '2026-04-27' } });
 
     expect(startTimeInput).toBeEnabled();
+    expect(startMeridiemSelect).toBeEnabled();
   });
 
-  it('submits the combined date and time as an ISO datetime', async () => {
+  it('submits the combined date and time as an ISO datetime using the AM/PM selection', async () => {
     const user = userEvent.setup();
 
     mockUseConceptSearch.mockReturnValue({ searchResults: searchedProcedure, isSearching: false });
@@ -390,7 +395,8 @@ describe('ProceduresForm', () => {
 
     const startGroup = screen.getByRole('group', { name: /start date and time/i });
     fireEvent.change(within(startGroup).getByLabelText(/^date$/i), { target: { value: '2026-04-27' } });
-    fireEvent.change(within(startGroup).getByLabelText(/^time$/i), { target: { value: '14:30' } });
+    fireEvent.change(within(startGroup).getByLabelText(/^time$/i), { target: { value: '02:30' } });
+    await user.selectOptions(within(startGroup).getByLabelText(/am\/pm/i), 'PM');
 
     await user.click(screen.getByRole('button', { name: /save & close/i }));
 
@@ -398,6 +404,31 @@ describe('ProceduresForm', () => {
       expect(mockSaveProcedure).toHaveBeenCalledWith(
         expect.objectContaining({
           startDateTime: expect.stringMatching(/^2026-04-27T14:30/),
+        }),
+      ),
+    );
+  });
+
+  it('keeps morning hours unchanged when AM is the selected meridiem', async () => {
+    const user = userEvent.setup();
+
+    mockUseConceptSearch.mockReturnValue({ searchResults: searchedProcedure, isSearching: false });
+    mockSaveProcedure.mockResolvedValue({ status: 201 } as unknown as FetchResponse);
+
+    renderProceduresForm();
+
+    await fillRequiredFields(user);
+
+    const startGroup = screen.getByRole('group', { name: /start date and time/i });
+    fireEvent.change(within(startGroup).getByLabelText(/^date$/i), { target: { value: '2026-04-27' } });
+    fireEvent.change(within(startGroup).getByLabelText(/^time$/i), { target: { value: '09:15' } });
+
+    await user.click(screen.getByRole('button', { name: /save & close/i }));
+
+    await waitFor(() =>
+      expect(mockSaveProcedure).toHaveBeenCalledWith(
+        expect.objectContaining({
+          startDateTime: expect.stringMatching(/^2026-04-27T09:15/),
         }),
       ),
     );
