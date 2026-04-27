@@ -114,8 +114,8 @@ describe('ProceduresForm', () => {
     expect(screen.getByRole('searchbox', { name: /enter procedure/i })).toBeInTheDocument();
     expect(screen.getByRole('group', { name: /procedure type/i })).toBeInTheDocument();
     expect(screen.getByRole('group', { name: /body site/i })).toBeInTheDocument();
-    expect(screen.getByRole('group', { name: /^start date$/i })).toBeInTheDocument();
-    expect(screen.getByRole('group', { name: /^end date$/i })).toBeInTheDocument();
+    expect(screen.getByRole('group', { name: /start date and time/i })).toBeInTheDocument();
+    expect(screen.getByRole('group', { name: /end date and time/i })).toBeInTheDocument();
     expect(screen.getByRole('group', { name: /^duration$/i })).toBeInTheDocument();
     expect(screen.getByRole('group', { name: /^status/i })).toBeInTheDocument();
     expect(screen.getByRole('group', { name: /notes/i })).toBeInTheDocument();
