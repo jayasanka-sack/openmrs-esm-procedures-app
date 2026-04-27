@@ -1,40 +1,18 @@
 {
   "$schema": "https://turbo.build/schema.json",
-  "pipeline": {
+  "tasks": {
     "build": {
-      "dependsOn": ["^build"],
-      "outputs": ["dist/**", "lib/**"]
+      "outputs": ["dist/**"]
     },
-    "test": {
-      "dependsOn": ["^build"]
-    },
-    "test:watch": {
-      "cache": false,
-      "persistent": true
-    },
-    "coverage": {
-      "dependsOn": ["test"]
-    },
-    "lint": {
-      "dependsOn": ["^build"]
-    },
-    "typescript": {
-      "dependsOn": ["^build"]
-    },
-    "verify": {
-      "dependsOn": ["build", "lint", "typescript", "test"]
-    },
+    "lint": {},
     "extract-translations": {
-      "dependsOn": ["^build"]
+      "outputs": ["./translations/*"]
     },
-    "prettier": {},
-    "dev": {
-      "cache": false,
-      "persistent": true
+    "test": {},
+    "coverage": {
+      "outputs": ["coverage/**"]
     },
-    "start": {
-      "cache": false,
-      "persistent": true
-    }
+    "typescript": {},
+    "verify": {}
   }
 }

@@ -19,7 +19,8 @@
     "lint": "eslint src --ext ts,tsx",
     "extract-translations": "i18next 'src/**/*.component.tsx' 'src/**/*.extension.tsx' 'src/**/*.modal.tsx' 'src/index.ts' --config ./tools/i18next-parser.config.js",
     "prettier": "prettier --config prettier.config.js --write \"src/**/*.{ts,tsx,css,scss}\"",
-    "postinstall": "husky install"
+    "postinstall": "husky install",
+    "verify": "turbo lint && turbo typescript && turbo test --color --concurrency=5"
   },
   "keywords": [
     "openmrs",
@@ -107,6 +108,7 @@
     "sass": "^1.33.0",
     "single-spa": "^6.0.0",
     "swr": "^2.0.0",
+    "turbo": "^2.5.2",
     "typescript": "^5.9.3",
     "zod": "^4.3.6"
   },
