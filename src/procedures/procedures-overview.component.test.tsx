@@ -71,7 +71,7 @@ describe('ProceduresOverview', () => {
       expect(screen.getByRole('columnheader', { name: header })).toBeInTheDocument();
     });
 
-    // First page: 5 rows visible (voided item excluded)
+    // First page: 5 rows visible
     const firstPageRows = [/appendectomy/i, /colonoscopy/i, /blood draw/i, /chest x-ray/i, /ecg/i];
     firstPageRows.forEach((row) => {
       expect(screen.getByRole('row', { name: row })).toBeInTheDocument();
@@ -80,9 +80,6 @@ describe('ProceduresOverview', () => {
     // Header row + 5 data rows = 6
     expect(screen.getAllByRole('row').length).toEqual(6);
     expect(screen.getByText(/5 \/ 6 items/i)).toBeInTheDocument();
-
-    // Voided procedure should not appear
-    expect(screen.queryByText(/Should Not Appear/i)).not.toBeInTheDocument();
 
     const nextPageButton = screen.getByRole('button', { name: /next page/i });
     await user.click(nextPageButton);

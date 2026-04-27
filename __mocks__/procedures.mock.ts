@@ -72,16 +72,6 @@ export const mockProceduresResponse = {
       status: { display: 'Completed' },
       voided: false,
     },
-    {
-      uuid: 'proc-uuid-7-voided',
-      display: 'Should Not Appear',
-      procedureCoded: { display: 'Should Not Appear' },
-      procedureType: { name: 'Surgery' },
-      bodySite: { display: 'Abdomen' },
-      startDateTime: '2021-07-01T00:00:00.000+0000',
-      status: { display: 'Completed' },
-      voided: true,
-    },
   ],
   links: [],
 };

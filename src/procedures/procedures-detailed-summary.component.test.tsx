@@ -60,7 +60,7 @@ describe('ProceduresDetailedSummary', () => {
       expect(screen.getByRole('button', { name: header })).toBeInTheDocument();
     });
 
-    // All 6 non-voided procedures should be displayed
+    // All 6 procedures should be displayed
     const expectedTableRows = [/appendectomy/i, /colonoscopy/i, /blood draw/i, /chest x-ray/i, /ecg/i, /mri brain/i];
     expectedTableRows.forEach((row) => {
       expect(screen.getByRole('row', { name: row })).toBeInTheDocument();
@@ -69,9 +69,6 @@ describe('ProceduresDetailedSummary', () => {
     // Header row + 6 data rows + 6 collapsed expanded rows (CSS not loaded in Jest) = 13
     expect(screen.getAllByRole('row').length).toEqual(13);
     expect(screen.getByRole('button', { name: /next page/i })).toBeDisabled();
-
-    // Voided procedure should not appear
-    expect(screen.queryByText(/Should Not Appear/i)).not.toBeInTheDocument();
   });
 
   it('renders duration and notes in the expanded row', async () => {

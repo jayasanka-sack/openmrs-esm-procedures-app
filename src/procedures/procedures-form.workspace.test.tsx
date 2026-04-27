@@ -63,6 +63,24 @@ function renderProceduresForm() {
   render(<ProceduresForm {...defaultProps} />);
 }
 
+async function fillRequiredFields(user: ReturnType<typeof userEvent.setup>) {
+  // The shared mockUseConceptSearch returns the same searchedProcedure mock
+  // for every concept search field, so each "Appendectomy" menuitem matches the
+  // currently-typed-in field — only one results list is visible at a time.
+  await user.type(screen.getByRole('searchbox', { name: /enter procedure/i }), 'App');
+  await user.click(screen.getByRole('menuitem', { name: /appendectomy/i }));
+
+  await user.type(screen.getByRole('searchbox', { name: /enter body site/i }), 'Site');
+  await user.click(screen.getByRole('menuitem', { name: /appendectomy/i }));
+
+  await user.type(screen.getByRole('searchbox', { name: /enter status/i }), 'Done');
+  await user.click(screen.getByRole('menuitem', { name: /appendectomy/i }));
+
+  const procedureTypeGroup = screen.getByRole('group', { name: /procedure type/i });
+  await user.click(within(procedureTypeGroup).getByRole('combobox'));
+  await user.click(screen.getByRole('option', { name: /surgery/i }));
+}
+
 beforeEach(() => {
   mockUseProcedureTypes.mockReturnValue({ procedureTypes: mockProcedureTypes, isLoading: false });
   mockUseConceptSearch.mockReturnValue({ searchResults: [], isSearching: false });
@@ -93,9 +111,9 @@ describe('ProceduresForm', () => {
     expect(screen.getByRole('searchbox', { name: /enter procedure/i })).toBeInTheDocument();
     expect(screen.getByRole('group', { name: /procedure type/i })).toBeInTheDocument();
     expect(screen.getByRole('group', { name: /body site/i })).toBeInTheDocument();
-    expect(screen.getByRole('group', { name: /start date/i })).toBeInTheDocument();
-    expect(screen.getByRole('group', { name: /end date/i })).toBeInTheDocument();
-    expect(screen.getByRole('group', { name: /^status$/i })).toBeInTheDocument();
+    expect(screen.getByRole('group', { name: /^start date$/i })).toBeInTheDocument();
+    expect(screen.getByRole('group', { name: /^end date$/i })).toBeInTheDocument();
+    expect(screen.getByRole('group', { name: /^status/i })).toBeInTheDocument();
     expect(screen.getByRole('group', { name: /notes/i })).toBeInTheDocument();
   });
 
@@ -193,20 +211,20 @@ describe('ProceduresForm', () => {
 
     renderProceduresForm();
 
-    await user.type(screen.getByRole('searchbox', { name: /enter procedure/i }), 'App');
-    await user.click(screen.getByRole('menuitem', { name: /appendectomy/i }));
+    await fillRequiredFields(user);
     await user.click(screen.getByRole('button', { name: /save & close/i }));
 
     await waitFor(() =>
       expect(mockSaveProcedure).toHaveBeenCalledWith({
         patient: mockPatient.id,
         procedureCoded: 'proc-concept-uuid-1',
-        procedureType: undefined,
-        bodySite: undefined,
-        startDateTime: undefined,
-        endDateTime: undefined,
-        status: undefined,
-        notes: undefined,
+        procedureType: 'pt-uuid-1',
+        bodySite: 'proc-concept-uuid-1',
+        startDateTime: null,
+        endDateTime: null,
+        status: 'proc-concept-uuid-1',
+        notes: '',
+        estimatedStartDate: null,
       }),
     );
   });
@@ -219,8 +237,7 @@ describe('ProceduresForm', () => {
 
     renderProceduresForm();
 
-    await user.type(screen.getByRole('searchbox', { name: /enter procedure/i }), 'App');
-    await user.click(screen.getByRole('menuitem', { name: /appendectomy/i }));
+    await fillRequiredFields(user);
     await user.type(screen.getByPlaceholderText(/enter notes/i), 'Some clinical notes');
     await user.click(screen.getByRole('button', { name: /save & close/i }));
 
@@ -237,13 +254,7 @@ describe('ProceduresForm', () => {
 
     renderProceduresForm();
 
-    await user.type(screen.getByRole('searchbox', { name: /enter procedure/i }), 'App');
-    await user.click(screen.getByRole('menuitem', { name: /appendectomy/i }));
-
-    const procedureTypeGroup = screen.getByRole('group', { name: /procedure type/i });
-    await user.click(within(procedureTypeGroup).getByRole('combobox'));
-    await user.click(screen.getByRole('option', { name: /surgery/i }));
-
+    await fillRequiredFields(user);
     await user.click(screen.getByRole('button', { name: /save & close/i }));
 
     await waitFor(() =>
@@ -259,8 +270,7 @@ describe('ProceduresForm', () => {
 
     renderProceduresForm();
 
-    await user.type(screen.getByRole('searchbox', { name: /enter procedure/i }), 'App');
-    await user.click(screen.getByRole('menuitem', { name: /appendectomy/i }));
+    await fillRequiredFields(user);
     await user.click(screen.getByRole('button', { name: /save & close/i }));
 
     await waitFor(() => expect(defaultProps.closeWorkspace).toHaveBeenCalledWith({ discardUnsavedChanges: true }));
@@ -275,8 +285,7 @@ describe('ProceduresForm', () => {
 
     renderProceduresForm();
 
-    await user.type(screen.getByRole('searchbox', { name: /enter procedure/i }), 'App');
-    await user.click(screen.getByRole('menuitem', { name: /appendectomy/i }));
+    await fillRequiredFields(user);
     await user.click(screen.getByRole('button', { name: /save & close/i }));
 
     await waitFor(() => expect(mockShowSnackbar).toHaveBeenCalled());
@@ -294,8 +303,7 @@ describe('ProceduresForm', () => {
 
     renderProceduresForm();
 
-    await user.type(screen.getByRole('searchbox', { name: /enter procedure/i }), 'App');
-    await user.click(screen.getByRole('menuitem', { name: /appendectomy/i }));
+    await fillRequiredFields(user);
     await user.click(screen.getByRole('button', { name: /save & close/i }));
 
     await screen.findByText(/error saving procedure/i);
