@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen, waitFor, within } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {
   type FetchResponse,
@@ -342,6 +342,65 @@ describe('ProceduresForm', () => {
 
     expect(await screen.findByText(/duration unit is required/i)).toBeInTheDocument();
     expect(mockSaveProcedure).not.toHaveBeenCalled();
+  });
+
+  it('renders Carbon TimePicker inputs alongside the start and end date pickers', () => {
+    renderProceduresForm();
+
+    const startGroup = screen.getByRole('group', { name: /start date and time/i });
+    expect(within(startGroup).getByLabelText(/^date$/i)).toBeInTheDocument();
+    expect(within(startGroup).getByLabelText(/^time$/i)).toBeInTheDocument();
+
+    const endGroup = screen.getByRole('group', { name: /end date and time/i });
+    expect(within(endGroup).getByLabelText(/^date$/i)).toBeInTheDocument();
+    expect(within(endGroup).getByLabelText(/^time$/i)).toBeInTheDocument();
+  });
+
+  it('disables the TimePicker until a date is picked', () => {
+    renderProceduresForm();
+
+    const startGroup = screen.getByRole('group', { name: /start date and time/i });
+    const startTimeInput = within(startGroup).getByLabelText(/^time$/i);
+    expect(startTimeInput).toBeDisabled();
+
+    const startDateInput = within(startGroup).getByLabelText(/^date$/i);
+    fireEvent.change(startDateInput, { target: { value: '2026-04-27' } });
+
+    expect(startTimeInput).toBeEnabled();
+  });
+
+  it('submits the combined date and time as an ISO datetime', async () => {
+    const user = userEvent.setup();
+
+    mockUseConceptSearch.mockReturnValue({ searchResults: searchedProcedure, isSearching: false });
+    mockSaveProcedure.mockResolvedValue({ status: 201 } as unknown as FetchResponse);
+
+    renderProceduresForm();
+
+    await user.type(screen.getByRole('searchbox', { name: /enter procedure/i }), 'App');
+    await user.click(screen.getByRole('menuitem', { name: /appendectomy/i }));
+    await user.type(screen.getByRole('searchbox', { name: /enter body site/i }), 'Site');
+    await user.click(screen.getByRole('menuitem', { name: /appendectomy/i }));
+    await user.type(screen.getByRole('searchbox', { name: /enter status/i }), 'Done');
+    await user.click(screen.getByRole('menuitem', { name: /appendectomy/i }));
+
+    const procedureTypeGroup = screen.getByRole('group', { name: /procedure type/i });
+    await user.click(within(procedureTypeGroup).getByRole('combobox'));
+    await user.click(screen.getByRole('option', { name: /surgery/i }));
+
+    const startGroup = screen.getByRole('group', { name: /start date and time/i });
+    fireEvent.change(within(startGroup).getByLabelText(/^date$/i), { target: { value: '2026-04-27' } });
+    fireEvent.change(within(startGroup).getByLabelText(/^time$/i), { target: { value: '14:30' } });
+
+    await user.click(screen.getByRole('button', { name: /save & close/i }));
+
+    await waitFor(() =>
+      expect(mockSaveProcedure).toHaveBeenCalledWith(
+        expect.objectContaining({
+          startDateTime: expect.stringMatching(/^2026-04-27T14:30/),
+        }),
+      ),
+    );
   });
 
   it('shows an error notification when saving fails', async () => {

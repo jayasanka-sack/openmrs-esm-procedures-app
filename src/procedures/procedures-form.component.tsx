@@ -20,8 +20,9 @@ import {
   Switch,
   TextArea,
   Tile,
+  TimePicker,
 } from '@carbon/react';
-import { Controller, useFormContext } from 'react-hook-form';
+import { Controller, useFormContext, type Control } from 'react-hook-form';
 import { OpenmrsDatePicker, ResponsiveWrapper, showSnackbar, useConfig, useLayoutType } from '@openmrs/esm-framework';
 import { type ConfigObject } from '../config-schema';
 import {
@@ -229,21 +230,8 @@ const ProceduresFormComponent: React.FC<ProceduresFormComponentProps> = ({
           </FormGroup>
 
           {isStartDateKnown && (
-            <FormGroup legendText={t('startDate', 'Start date')}>
-              <Controller
-                name="startDateTime"
-                control={control}
-                render={({ field, fieldState }) => (
-                  <ResponsiveWrapper>
-                    <OpenmrsDatePicker
-                      {...field}
-                      id="startDateTime"
-                      invalid={Boolean(fieldState?.error?.message)}
-                      invalidText={fieldState?.error?.message}
-                    />
-                  </ResponsiveWrapper>
-                )}
-              />
+            <FormGroup legendText={t('startDateAndTime', 'Start date and time')}>
+              <DateTimeField name="startDateTime" idPrefix="startDateTime" control={control} />
               {errors.startDateTime && <p className={styles.errorMessage}>{errors.startDateTime.message}</p>}
             </FormGroup>
           )}
@@ -279,21 +267,8 @@ const ProceduresFormComponent: React.FC<ProceduresFormComponentProps> = ({
             </FormGroup>
           )}
 
-          <FormGroup legendText={t('endDate', 'End date')}>
-            <Controller
-              name="endDateTime"
-              control={control}
-              render={({ field, fieldState }) => (
-                <ResponsiveWrapper>
-                  <OpenmrsDatePicker
-                    {...field}
-                    id="endDateTime"
-                    invalid={Boolean(fieldState?.error?.message)}
-                    invalidText={fieldState?.error?.message}
-                  />
-                </ResponsiveWrapper>
-              )}
-            />
+          <FormGroup legendText={t('endDateAndTime', 'End date and time')}>
+            <DateTimeField name="endDateTime" idPrefix="endDateTime" control={control} />
             {errors.endDateTime && <p className={styles.errorMessage}>{errors.endDateTime.message}</p>}
           </FormGroup>
 
@@ -407,6 +382,86 @@ const ProceduresFormComponent: React.FC<ProceduresFormComponentProps> = ({
     </Form>
   );
 };
+
+const TIME_PATTERN = /^([01]?\d|2[0-3]):([0-5]\d)$/;
+
+function formatTime(date: Date | null | undefined): string {
+  if (!date) return '';
+  return `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
+}
+
+function DateTimeField({
+  name,
+  idPrefix,
+  control,
+}: {
+  name: 'startDateTime' | 'endDateTime';
+  idPrefix: string;
+  control: Control<ProceduresFormSchema>;
+}) {
+  const { t } = useTranslation();
+
+  return (
+    <Controller
+      name={name}
+      control={control}
+      render={({ field, fieldState }) => {
+        const dateValue = field.value ?? null;
+        const errorText = fieldState?.error?.message;
+        const invalid = Boolean(errorText);
+
+        const handleDateChange = (next: Date | null | undefined) => {
+          if (!next) {
+            field.onChange(null);
+            return;
+          }
+          const merged = new Date(next);
+          if (dateValue) {
+            merged.setHours(dateValue.getHours(), dateValue.getMinutes(), 0, 0);
+          } else {
+            merged.setHours(0, 0, 0, 0);
+          }
+          field.onChange(merged);
+        };
+
+        const handleTimeChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+          const raw = event.target.value;
+          const match = TIME_PATTERN.exec(raw);
+          if (!match) return;
+          const base = dateValue ?? new Date();
+          const merged = new Date(base);
+          merged.setHours(Number(match[1]), Number(match[2]), 0, 0);
+          field.onChange(merged);
+        };
+
+        return (
+          <div className={styles.dateTimeFieldGroup}>
+            <ResponsiveWrapper>
+              <OpenmrsDatePicker
+                value={dateValue}
+                onChange={handleDateChange}
+                id={`${idPrefix}-date`}
+                labelText={t('date', 'Date')}
+                invalid={invalid}
+                invalidText={errorText}
+              />
+            </ResponsiveWrapper>
+            <TimePicker
+              id={`${idPrefix}-time`}
+              labelText={t('time', 'Time')}
+              placeholder="hh:mm"
+              pattern="([01]?[0-9]|2[0-3]):[0-5][0-9]"
+              maxLength={5}
+              defaultValue={formatTime(dateValue)}
+              onChange={handleTimeChange}
+              disabled={!dateValue}
+            />
+          </div>
+        );
+      }}
+    />
+  );
+}
 
 function RequiredFieldLabel({ label }: { label: string }) {
   const { t } = useTranslation();
