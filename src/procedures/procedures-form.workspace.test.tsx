@@ -40,6 +40,9 @@ mockUseConfig.mockReturnValue({
   procedureCodedConceptClassUuid: '',
   bodySiteConceptClassUuid: '',
   statusConceptClassUuid: '',
+  durationUnitMinutesConceptUuid: 'minutes-uuid',
+  durationUnitHoursConceptUuid: 'hours-uuid',
+  durationUnitDaysConceptUuid: 'days-uuid',
 });
 
 const defaultProps: PatientWorkspace2DefinitionProps<ProceduresFormProps, object> = {
@@ -113,6 +116,7 @@ describe('ProceduresForm', () => {
     expect(screen.getByRole('group', { name: /body site/i })).toBeInTheDocument();
     expect(screen.getByRole('group', { name: /^start date$/i })).toBeInTheDocument();
     expect(screen.getByRole('group', { name: /^end date$/i })).toBeInTheDocument();
+    expect(screen.getByRole('group', { name: /^duration$/i })).toBeInTheDocument();
     expect(screen.getByRole('group', { name: /^status/i })).toBeInTheDocument();
     expect(screen.getByRole('group', { name: /notes/i })).toBeInTheDocument();
   });
@@ -225,6 +229,8 @@ describe('ProceduresForm', () => {
         status: 'proc-concept-uuid-1',
         notes: '',
         estimatedStartDate: null,
+        duration: null,
+        durationUnit: null,
       }),
     );
   });
@@ -292,6 +298,50 @@ describe('ProceduresForm', () => {
     expect(mockShowSnackbar).toHaveBeenCalledWith(
       expect.objectContaining({ kind: 'success', title: 'Procedure saved' }),
     );
+  });
+
+  it('includes duration and duration unit in the payload when provided', async () => {
+    const user = userEvent.setup();
+
+    mockUseConceptSearch.mockReturnValue({ searchResults: searchedProcedure, isSearching: false });
+    mockSaveProcedure.mockResolvedValue({ status: 201 } as unknown as FetchResponse);
+
+    renderProceduresForm();
+
+    await fillRequiredFields(user);
+
+    const durationInput = screen.getByRole('spinbutton', { name: /^duration$/i });
+    await user.type(durationInput, '30');
+
+    const unitSelect = screen.getByLabelText(/duration unit/i);
+    await user.selectOptions(unitSelect, 'minutes-uuid');
+
+    await user.click(screen.getByRole('button', { name: /save & close/i }));
+
+    await waitFor(() =>
+      expect(mockSaveProcedure).toHaveBeenCalledWith(
+        expect.objectContaining({ duration: 30, durationUnit: 'minutes-uuid' }),
+      ),
+    );
+  });
+
+  it('requires a duration unit when a duration value is entered', async () => {
+    const user = userEvent.setup();
+
+    mockUseConceptSearch.mockReturnValue({ searchResults: searchedProcedure, isSearching: false });
+
+    renderProceduresForm();
+
+    await user.type(screen.getByRole('searchbox', { name: /enter procedure/i }), 'App');
+    await user.click(screen.getByRole('menuitem', { name: /appendectomy/i }));
+
+    const durationInput = screen.getByRole('spinbutton', { name: /^duration$/i });
+    await user.type(durationInput, '5');
+
+    await user.click(screen.getByRole('button', { name: /save & close/i }));
+
+    expect(await screen.findByText(/duration unit is required/i)).toBeInTheDocument();
+    expect(mockSaveProcedure).not.toHaveBeenCalled();
   });
 
   it('shows an error notification when saving fails', async () => {

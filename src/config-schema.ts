@@ -21,6 +21,21 @@ export const configSchema = {
     _description: 'Concept class UUID for procedure status concepts',
     _default: '',
   },
+  durationUnitMinutesConceptUuid: {
+    _type: Type.UUID,
+    _description: 'Concept UUID representing the "minutes" duration unit',
+    _default: '1733AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+  },
+  durationUnitHoursConceptUuid: {
+    _type: Type.UUID,
+    _description: 'Concept UUID representing the "hours" duration unit',
+    _default: '1822AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+  },
+  durationUnitDaysConceptUuid: {
+    _type: Type.UUID,
+    _description: 'Concept UUID representing the "days" duration unit',
+    _default: '1072AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+  },
 };
 
 export interface ConfigObject {
@@ -28,4 +43,7 @@ export interface ConfigObject {
   procedureCodedConceptClassUuid: string;
   bodySiteConceptClassUuid: string;
   statusConceptClassUuid: string;
+  durationUnitMinutesConceptUuid: string;
+  durationUnitHoursConceptUuid: string;
+  durationUnitDaysConceptUuid: string;
 }

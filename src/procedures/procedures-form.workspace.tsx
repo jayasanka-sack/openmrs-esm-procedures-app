@@ -23,6 +23,11 @@ const schema = z
     status: z.string().min(1, 'Status is required'),
     notes: z.string().optional(),
     estimatedStartDate: z.string().optional(),
+    duration: z
+      .union([z.number().int().positive('Duration must be a positive number'), z.nan()])
+      .optional()
+      .nullable(),
+    durationUnit: z.string().optional(),
   })
   .refine(
     (data) => {
@@ -32,6 +37,13 @@ const schema = z
       return true;
     },
     { message: 'End date must be on or after start date', path: ['endDateTime'] },
+  )
+  .refine(
+    (data) => {
+      const hasDuration = typeof data.duration === 'number' && !Number.isNaN(data.duration);
+      return !hasDuration || Boolean(data.durationUnit);
+    },
+    { message: 'Duration unit is required when a duration is provided', path: ['durationUnit'] },
   );
 
 export type ProceduresFormSchema = z.infer<typeof schema>;
@@ -56,6 +68,8 @@ const ProceduresForm: React.FC<PatientWorkspace2DefinitionProps<ProceduresFormPr
       status: procedure?.status?.uuid ?? '',
       notes: procedure?.notes ?? '',
       estimatedStartDate: procedure?.estimatedStartDate ?? '',
+      duration: typeof procedure?.duration === 'number' ? procedure.duration : null,
+      durationUnit: procedure?.durationUnit?.uuid ?? '',
     },
   });
 
