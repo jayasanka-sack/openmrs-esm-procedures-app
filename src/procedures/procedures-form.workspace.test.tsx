@@ -40,6 +40,9 @@ mockUseConfig.mockReturnValue({
   procedureCodedConceptClassUuid: '',
   bodySiteConceptClassUuid: '',
   statusConceptClassUuid: '',
+  durationUnitMinutesConceptUuid: 'minutes-uuid',
+  durationUnitHoursConceptUuid: 'hours-uuid',
+  durationUnitDaysConceptUuid: 'days-uuid',
 });
 
 const defaultProps: PatientWorkspace2DefinitionProps<ProceduresFormProps, object> = {
@@ -111,8 +114,9 @@ describe('ProceduresForm', () => {
     expect(screen.getByRole('searchbox', { name: /enter procedure/i })).toBeInTheDocument();
     expect(screen.getByRole('group', { name: /procedure type/i })).toBeInTheDocument();
     expect(screen.getByRole('group', { name: /body site/i })).toBeInTheDocument();
-    expect(screen.getByRole('group', { name: /^start date$/i })).toBeInTheDocument();
-    expect(screen.getByRole('group', { name: /^end date$/i })).toBeInTheDocument();
+    expect(screen.getByRole('group', { name: /start date and time/i })).toBeInTheDocument();
+    expect(screen.getByRole('group', { name: /end date and time/i })).toBeInTheDocument();
+    expect(screen.getByRole('group', { name: /^duration$/i })).toBeInTheDocument();
     expect(screen.getByRole('group', { name: /^status/i })).toBeInTheDocument();
     expect(screen.getByRole('group', { name: /notes/i })).toBeInTheDocument();
   });
@@ -225,6 +229,8 @@ describe('ProceduresForm', () => {
         status: 'proc-concept-uuid-1',
         notes: '',
         estimatedStartDate: null,
+        duration: null,
+        durationUnit: null,
       }),
     );
   });
@@ -291,6 +297,144 @@ describe('ProceduresForm', () => {
     await waitFor(() => expect(mockShowSnackbar).toHaveBeenCalled());
     expect(mockShowSnackbar).toHaveBeenCalledWith(
       expect.objectContaining({ kind: 'success', title: 'Procedure saved' }),
+    );
+  });
+
+  it('includes duration and duration unit in the payload when provided', async () => {
+    const user = userEvent.setup();
+
+    mockUseConceptSearch.mockReturnValue({ searchResults: searchedProcedure, isSearching: false });
+    mockSaveProcedure.mockResolvedValue({ status: 201 } as unknown as FetchResponse);
+
+    renderProceduresForm();
+
+    await fillRequiredFields(user);
+
+    const durationInput = screen.getByRole('spinbutton', { name: /^duration$/i });
+    await user.type(durationInput, '30');
+
+    const unitSelect = screen.getByLabelText(/duration unit/i);
+    await user.selectOptions(unitSelect, 'minutes-uuid');
+
+    await user.click(screen.getByRole('button', { name: /save & close/i }));
+
+    await waitFor(() =>
+      expect(mockSaveProcedure).toHaveBeenCalledWith(
+        expect.objectContaining({ duration: 30, durationUnit: 'minutes-uuid' }),
+      ),
+    );
+  });
+
+  it('requires a duration unit when a duration value is entered', async () => {
+    const user = userEvent.setup();
+
+    mockUseConceptSearch.mockReturnValue({ searchResults: searchedProcedure, isSearching: false });
+
+    renderProceduresForm();
+
+    await user.type(screen.getByRole('searchbox', { name: /enter procedure/i }), 'App');
+    await user.click(screen.getByRole('menuitem', { name: /appendectomy/i }));
+
+    const durationInput = screen.getByRole('spinbutton', { name: /^duration$/i });
+    await user.type(durationInput, '5');
+
+    await user.click(screen.getByRole('button', { name: /save & close/i }));
+
+    expect(await screen.findByText(/duration unit is required/i)).toBeInTheDocument();
+    expect(mockSaveProcedure).not.toHaveBeenCalled();
+  });
+
+  it('renders Carbon TimePicker inputs alongside the start and end date pickers', () => {
+    renderProceduresForm();
+
+    const startGroup = screen.getByRole('group', { name: /start date and time/i });
+    expect(within(startGroup).getByLabelText(/^date$/i)).toBeInTheDocument();
+    expect(within(startGroup).getByLabelText(/^time$/i)).toBeInTheDocument();
+    expect(within(startGroup).getByLabelText(/am\/pm/i)).toBeInTheDocument();
+
+    const endGroup = screen.getByRole('group', { name: /end date and time/i });
+    expect(within(endGroup).getByLabelText(/^date$/i)).toBeInTheDocument();
+    expect(within(endGroup).getByLabelText(/^time$/i)).toBeInTheDocument();
+    expect(within(endGroup).getByLabelText(/am\/pm/i)).toBeInTheDocument();
+  });
+
+  it('disables the TimePicker and AM/PM select until a date is picked', async () => {
+    const user = userEvent.setup();
+    renderProceduresForm();
+
+    const startGroup = screen.getByRole('group', { name: /start date and time/i });
+    const startTimeInput = within(startGroup).getByLabelText(/^time$/i);
+    const startMeridiemSelect = within(startGroup).getByLabelText(/am\/pm/i);
+    expect(startTimeInput).toBeDisabled();
+    expect(startMeridiemSelect).toBeDisabled();
+
+    const startDateInput = within(startGroup).getByLabelText(/^date$/i);
+    await user.click(startDateInput);
+    await user.paste('2026-04-27');
+
+    expect(startTimeInput).toBeEnabled();
+    expect(startMeridiemSelect).toBeEnabled();
+  });
+
+  it('submits the combined date and time as an ISO datetime using the AM/PM selection', async () => {
+    const user = userEvent.setup();
+
+    mockUseConceptSearch.mockReturnValue({ searchResults: searchedProcedure, isSearching: false });
+    mockSaveProcedure.mockResolvedValue({ status: 201 } as unknown as FetchResponse);
+
+    renderProceduresForm();
+
+    await user.type(screen.getByRole('searchbox', { name: /enter procedure/i }), 'App');
+    await user.click(screen.getByRole('menuitem', { name: /appendectomy/i }));
+    await user.type(screen.getByRole('searchbox', { name: /enter body site/i }), 'Site');
+    await user.click(screen.getByRole('menuitem', { name: /appendectomy/i }));
+    await user.type(screen.getByRole('searchbox', { name: /enter status/i }), 'Done');
+    await user.click(screen.getByRole('menuitem', { name: /appendectomy/i }));
+
+    const procedureTypeGroup = screen.getByRole('group', { name: /procedure type/i });
+    await user.click(within(procedureTypeGroup).getByRole('combobox'));
+    await user.click(screen.getByRole('option', { name: /surgery/i }));
+
+    const startGroup = screen.getByRole('group', { name: /start date and time/i });
+    await user.click(within(startGroup).getByLabelText(/^date$/i));
+    await user.paste('2026-04-27');
+    await user.type(within(startGroup).getByLabelText(/^time$/i), '02:30');
+    await user.selectOptions(within(startGroup).getByLabelText(/am\/pm/i), 'PM');
+
+    await user.click(screen.getByRole('button', { name: /save & close/i }));
+
+    await waitFor(() =>
+      expect(mockSaveProcedure).toHaveBeenCalledWith(
+        expect.objectContaining({
+          startDateTime: expect.stringMatching(/^2026-04-27T14:30/),
+        }),
+      ),
+    );
+  });
+
+  it('keeps morning hours unchanged when AM is the selected meridiem', async () => {
+    const user = userEvent.setup();
+
+    mockUseConceptSearch.mockReturnValue({ searchResults: searchedProcedure, isSearching: false });
+    mockSaveProcedure.mockResolvedValue({ status: 201 } as unknown as FetchResponse);
+
+    renderProceduresForm();
+
+    await fillRequiredFields(user);
+
+    const startGroup = screen.getByRole('group', { name: /start date and time/i });
+    await user.click(within(startGroup).getByLabelText(/^date$/i));
+    await user.paste('2026-04-27');
+    await user.type(within(startGroup).getByLabelText(/^time$/i), '09:15');
+
+    await user.click(screen.getByRole('button', { name: /save & close/i }));
+
+    await waitFor(() =>
+      expect(mockSaveProcedure).toHaveBeenCalledWith(
+        expect.objectContaining({
+          startDateTime: expect.stringMatching(/^2026-04-27T09:15/),
+        }),
+      ),
     );
   });
 

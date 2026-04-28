@@ -90,3 +90,17 @@
   color: colors.$red-60;
   margin-left: layout.$spacing-01;
 }
+
+.durationFieldGroup {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: layout.$spacing-05;
+  align-items: end;
+}
+
+.dateTimeFieldGroup {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: layout.$spacing-05;
+  align-items: end;
+}

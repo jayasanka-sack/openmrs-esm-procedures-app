@@ -12,6 +12,7 @@ import {
   InlineLoading,
   InlineNotification,
   Layer,
+  NumberInput,
   Search,
   Select,
   SelectItem,
@@ -21,7 +22,7 @@ import {
   Tile,
 } from '@carbon/react';
 import { Controller, useFormContext } from 'react-hook-form';
-import { OpenmrsDatePicker, ResponsiveWrapper, showSnackbar, useConfig, useLayoutType } from '@openmrs/esm-framework';
+import { ResponsiveWrapper, showSnackbar, useConfig, useLayoutType } from '@openmrs/esm-framework';
 import { type ConfigObject } from '../config-schema';
 import {
   saveProcedure,
@@ -31,6 +32,7 @@ import {
   useProcedureTypes,
 } from './procedures.resource';
 import { type ProceduresFormSchema } from './procedures-form.workspace';
+import { DateTimeField } from './date-time-field.component';
 import styles from './procedures-form.scss';
 import { type ProcedureType, type ConceptReference, type Procedure } from '../types';
 
@@ -55,8 +57,14 @@ const ProceduresFormComponent: React.FC<ProceduresFormComponentProps> = ({
   procedure,
 }) => {
   const { t } = useTranslation();
-  const { procedureCodedConceptClassUuid, bodySiteConceptClassUuid, statusConceptClassUuid } =
-    useConfig<ConfigObject>();
+  const {
+    procedureCodedConceptClassUuid,
+    bodySiteConceptClassUuid,
+    statusConceptClassUuid,
+    durationUnitMinutesConceptUuid,
+    durationUnitHoursConceptUuid,
+    durationUnitDaysConceptUuid,
+  } = useConfig<ConfigObject>();
   const mutate = useMutatePatientProcedures(patientUuid);
 
   const {
@@ -104,11 +112,15 @@ const ProceduresFormComponent: React.FC<ProceduresFormComponentProps> = ({
     const startDateTime = getValues('startDateTime');
     const endDateTime = getValues('endDateTime');
     const notes = getValues('notes');
+    const duration = getValues('duration');
+    const durationUnit = getValues('durationUnit');
 
     let estimatedStartDate: string | undefined;
     if (!isStartDateKnown && estimatedYear) {
       estimatedStartDate = estimatedMonth ? `${estimatedYear}-${estimatedMonth}` : estimatedYear;
     }
+
+    const hasDuration = typeof duration === 'number' && !Number.isNaN(duration);
 
     const payload = {
       patient: patientUuid,
@@ -120,6 +132,8 @@ const ProceduresFormComponent: React.FC<ProceduresFormComponentProps> = ({
       status: statusField.selectedConcept?.uuid,
       notes: notes,
       estimatedStartDate: estimatedStartDate || null,
+      duration: hasDuration ? duration : null,
+      durationUnit: hasDuration && durationUnit ? durationUnit : null,
     };
 
     try {
@@ -216,21 +230,8 @@ const ProceduresFormComponent: React.FC<ProceduresFormComponentProps> = ({
           </FormGroup>
 
           {isStartDateKnown && (
-            <FormGroup legendText={t('startDate', 'Start date')}>
-              <Controller
-                name="startDateTime"
-                control={control}
-                render={({ field, fieldState }) => (
-                  <ResponsiveWrapper>
-                    <OpenmrsDatePicker
-                      {...field}
-                      id="startDateTime"
-                      invalid={Boolean(fieldState?.error?.message)}
-                      invalidText={fieldState?.error?.message}
-                    />
-                  </ResponsiveWrapper>
-                )}
-              />
+            <FormGroup legendText={t('startDateAndTime', 'Start date and time')}>
+              <DateTimeField name="startDateTime" idPrefix="startDateTime" control={control} />
               {errors.startDateTime && <p className={styles.errorMessage}>{errors.startDateTime.message}</p>}
             </FormGroup>
           )}
@@ -266,22 +267,62 @@ const ProceduresFormComponent: React.FC<ProceduresFormComponentProps> = ({
             </FormGroup>
           )}
 
-          <FormGroup legendText={t('endDate', 'End date')}>
-            <Controller
-              name="endDateTime"
-              control={control}
-              render={({ field, fieldState }) => (
-                <ResponsiveWrapper>
-                  <OpenmrsDatePicker
-                    {...field}
-                    id="endDateTime"
-                    invalid={Boolean(fieldState?.error?.message)}
-                    invalidText={fieldState?.error?.message}
-                  />
-                </ResponsiveWrapper>
-              )}
-            />
+          <FormGroup legendText={t('endDateAndTime', 'End date and time')}>
+            <DateTimeField name="endDateTime" idPrefix="endDateTime" control={control} />
             {errors.endDateTime && <p className={styles.errorMessage}>{errors.endDateTime.message}</p>}
+          </FormGroup>
+
+          <FormGroup legendText={t('duration', 'Duration')}>
+            <div className={styles.durationFieldGroup}>
+              <Controller
+                name="duration"
+                control={control}
+                render={({ field: { onChange, value, ref, name } }) => (
+                  <ResponsiveWrapper>
+                    <NumberInput
+                      id="duration"
+                      name={name}
+                      ref={ref}
+                      label={t('durationValue', 'Duration')}
+                      placeholder={t('enterDuration', 'Enter duration')}
+                      min={1}
+                      hideSteppers
+                      allowEmpty
+                      value={value ?? ''}
+                      onChange={(_event, { value: nextValue }: { value: number | string }) => {
+                        if (nextValue == null || nextValue === '') {
+                          onChange(null);
+                          return;
+                        }
+                        const parsed = typeof nextValue === 'number' ? nextValue : Number(nextValue);
+                        onChange(Number.isNaN(parsed) ? null : parsed);
+                      }}
+                    />
+                  </ResponsiveWrapper>
+                )}
+              />
+              <Controller
+                name="durationUnit"
+                control={control}
+                render={({ field }) => (
+                  <ResponsiveWrapper>
+                    <Select
+                      id="durationUnit"
+                      labelText={t('durationUnit', 'Duration unit')}
+                      value={field.value ?? ''}
+                      onChange={(e: React.ChangeEvent<HTMLSelectElement>) => field.onChange(e.target.value)}
+                    >
+                      <SelectItem value="" text={t('selectDurationUnit', 'Select unit')} />
+                      <SelectItem value={durationUnitMinutesConceptUuid} text={t('minutes', 'Minutes')} />
+                      <SelectItem value={durationUnitHoursConceptUuid} text={t('hours', 'Hours')} />
+                      <SelectItem value={durationUnitDaysConceptUuid} text={t('days', 'Days')} />
+                    </Select>
+                  </ResponsiveWrapper>
+                )}
+              />
+            </div>
+            {errors.duration && <p className={styles.errorMessage}>{errors.duration.message}</p>}
+            {errors.durationUnit && <p className={styles.errorMessage}>{errors.durationUnit.message}</p>}
           </FormGroup>
 
           <FormGroup legendText={<RequiredFieldLabel label={t('status', 'Status')} />}>

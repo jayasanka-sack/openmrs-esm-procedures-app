@@ -31,6 +31,8 @@ export interface RawProcedure {
   endDateTime?: string;
   status?: string;
   notes?: string;
+  duration?: number;
+  durationUnit?: string;
 }
 
 export type Procedure = {
