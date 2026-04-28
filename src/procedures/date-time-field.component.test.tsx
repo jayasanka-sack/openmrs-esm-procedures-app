@@ -1,5 +1,5 @@
 import React from 'react';
-import { fireEvent, render, screen } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useForm, useWatch } from 'react-hook-form';
 import { DateTimeField } from './date-time-field.component';
@@ -26,8 +26,10 @@ function Harness({ defaultValue = null, fieldName = 'startDateTime', idPrefix = 
   );
 }
 
-function pickDate(date = '2026-04-27') {
-  fireEvent.change(screen.getByLabelText(/^date$/i), { target: { value: date } });
+async function pickDate(user: ReturnType<typeof userEvent.setup>, date = '2026-04-27') {
+  const dateInput = screen.getByLabelText(/^date$/i);
+  await user.click(dateInput);
+  await user.paste(date);
 }
 
 describe('DateTimeField', () => {
@@ -39,23 +41,25 @@ describe('DateTimeField', () => {
     expect(screen.getByLabelText(/am\/pm/i)).toBeInTheDocument();
   });
 
-  it('disables the time and meridiem inputs until a date is picked', () => {
+  it('disables the time and meridiem inputs until a date is picked', async () => {
+    const user = userEvent.setup();
     render(<Harness />);
 
     expect(screen.getByLabelText(/^time$/i)).toBeDisabled();
     expect(screen.getByLabelText(/am\/pm/i)).toBeDisabled();
 
-    pickDate();
+    await pickDate(user);
 
     expect(screen.getByLabelText(/^time$/i)).toBeEnabled();
     expect(screen.getByLabelText(/am\/pm/i)).toBeEnabled();
   });
 
-  it('combines a 12-hour time with the AM meridiem into a morning datetime', () => {
+  it('combines a 12-hour time with the AM meridiem into a morning datetime', async () => {
+    const user = userEvent.setup();
     render(<Harness />);
 
-    pickDate();
-    fireEvent.change(screen.getByLabelText(/^time$/i), { target: { value: '09:15' } });
+    await pickDate(user);
+    await user.type(screen.getByLabelText(/^time$/i), '09:15');
 
     expect(screen.getByTestId('hours')).toHaveTextContent('9');
     expect(screen.getByTestId('minutes')).toHaveTextContent('15');
@@ -65,8 +69,8 @@ describe('DateTimeField', () => {
     const user = userEvent.setup();
     render(<Harness />);
 
-    pickDate();
-    fireEvent.change(screen.getByLabelText(/^time$/i), { target: { value: '02:30' } });
+    await pickDate(user);
+    await user.type(screen.getByLabelText(/^time$/i), '02:30');
     expect(screen.getByTestId('hours')).toHaveTextContent('2');
 
     await user.selectOptions(screen.getByLabelText(/am\/pm/i), 'PM');
@@ -79,20 +83,23 @@ describe('DateTimeField', () => {
     const user = userEvent.setup();
     render(<Harness />);
 
-    pickDate();
-    fireEvent.change(screen.getByLabelText(/^time$/i), { target: { value: '12:00' } });
+    await pickDate(user);
+    await user.type(screen.getByLabelText(/^time$/i), '12:00');
     expect(screen.getByTestId('hours')).toHaveTextContent('0');
 
     await user.selectOptions(screen.getByLabelText(/am\/pm/i), 'PM');
     expect(screen.getByTestId('hours')).toHaveTextContent('12');
   });
 
-  it('ignores time input that does not match the 12-hour pattern', () => {
+  it('ignores time input that does not match the 12-hour pattern', async () => {
+    const user = userEvent.setup();
     render(<Harness />);
 
-    pickDate();
-    fireEvent.change(screen.getByLabelText(/^time$/i), { target: { value: '09:15' } });
-    fireEvent.change(screen.getByLabelText(/^time$/i), { target: { value: '25:99' } });
+    await pickDate(user);
+    const timeInput = screen.getByLabelText(/^time$/i);
+    await user.type(timeInput, '09:15');
+    await user.clear(timeInput);
+    await user.type(timeInput, '25:99');
 
     expect(screen.getByTestId('hours')).toHaveTextContent('9');
     expect(screen.getByTestId('minutes')).toHaveTextContent('15');
@@ -102,16 +109,14 @@ describe('DateTimeField', () => {
     render(<Harness defaultValue={new Date(2026, 3, 27, 14, 30)} />);
 
     expect(screen.getByLabelText(/am\/pm/i)).toHaveValue('PM');
-    const timeInput = screen.getByLabelText(/^time$/i) as HTMLInputElement;
-    expect(timeInput.value).toBe('02:30');
+    expect(screen.getByLabelText(/^time$/i)).toHaveValue('02:30');
   });
 
   it('reflects the meridiem of the initial value (AM at midnight)', () => {
     render(<Harness defaultValue={new Date(2026, 3, 27, 0, 0)} />);
 
     expect(screen.getByLabelText(/am\/pm/i)).toHaveValue('AM');
-    const timeInput = screen.getByLabelText(/^time$/i) as HTMLInputElement;
-    expect(timeInput.value).toBe('12:00');
+    expect(screen.getByLabelText(/^time$/i)).toHaveValue('12:00');
   });
 
   it('uses the idPrefix prop for the rendered control ids', () => {
@@ -122,11 +127,12 @@ describe('DateTimeField', () => {
     expect(screen.getByLabelText(/am\/pm/i)).toHaveAttribute('id', 'end-meridiem');
   });
 
-  it('keeps the date when only the time changes', () => {
+  it('keeps the date when only the time changes', async () => {
+    const user = userEvent.setup();
     render(<Harness />);
 
-    pickDate('2026-04-27');
-    fireEvent.change(screen.getByLabelText(/^time$/i), { target: { value: '09:15' } });
+    await pickDate(user, '2026-04-27');
+    await user.type(screen.getByLabelText(/^time$/i), '09:15');
 
     expect(screen.getByTestId('iso')).toHaveTextContent(/^2026-04-27T/);
   });
@@ -135,8 +141,8 @@ describe('DateTimeField', () => {
     const user = userEvent.setup();
     render(<Harness />);
 
-    pickDate();
-    fireEvent.change(screen.getByLabelText(/^time$/i), { target: { value: '09:15' } });
+    await pickDate(user);
+    await user.type(screen.getByLabelText(/^time$/i), '09:15');
     const before = screen.getByTestId('iso').textContent ?? '';
 
     await user.selectOptions(screen.getByLabelText(/am\/pm/i), 'AM');

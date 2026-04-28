@@ -1,5 +1,5 @@
 import React from 'react';
-import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {
   type FetchResponse,
@@ -358,7 +358,8 @@ describe('ProceduresForm', () => {
     expect(within(endGroup).getByLabelText(/am\/pm/i)).toBeInTheDocument();
   });
 
-  it('disables the TimePicker and AM/PM select until a date is picked', () => {
+  it('disables the TimePicker and AM/PM select until a date is picked', async () => {
+    const user = userEvent.setup();
     renderProceduresForm();
 
     const startGroup = screen.getByRole('group', { name: /start date and time/i });
@@ -368,7 +369,8 @@ describe('ProceduresForm', () => {
     expect(startMeridiemSelect).toBeDisabled();
 
     const startDateInput = within(startGroup).getByLabelText(/^date$/i);
-    fireEvent.change(startDateInput, { target: { value: '2026-04-27' } });
+    await user.click(startDateInput);
+    await user.paste('2026-04-27');
 
     expect(startTimeInput).toBeEnabled();
     expect(startMeridiemSelect).toBeEnabled();
@@ -394,8 +396,9 @@ describe('ProceduresForm', () => {
     await user.click(screen.getByRole('option', { name: /surgery/i }));
 
     const startGroup = screen.getByRole('group', { name: /start date and time/i });
-    fireEvent.change(within(startGroup).getByLabelText(/^date$/i), { target: { value: '2026-04-27' } });
-    fireEvent.change(within(startGroup).getByLabelText(/^time$/i), { target: { value: '02:30' } });
+    await user.click(within(startGroup).getByLabelText(/^date$/i));
+    await user.paste('2026-04-27');
+    await user.type(within(startGroup).getByLabelText(/^time$/i), '02:30');
     await user.selectOptions(within(startGroup).getByLabelText(/am\/pm/i), 'PM');
 
     await user.click(screen.getByRole('button', { name: /save & close/i }));
@@ -420,8 +423,9 @@ describe('ProceduresForm', () => {
     await fillRequiredFields(user);
 
     const startGroup = screen.getByRole('group', { name: /start date and time/i });
-    fireEvent.change(within(startGroup).getByLabelText(/^date$/i), { target: { value: '2026-04-27' } });
-    fireEvent.change(within(startGroup).getByLabelText(/^time$/i), { target: { value: '09:15' } });
+    await user.click(within(startGroup).getByLabelText(/^date$/i));
+    await user.paste('2026-04-27');
+    await user.type(within(startGroup).getByLabelText(/^time$/i), '09:15');
 
     await user.click(screen.getByRole('button', { name: /save & close/i }));
 
