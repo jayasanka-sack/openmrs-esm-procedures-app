@@ -23,10 +23,7 @@ const schema = z
     status: z.string().min(1, 'Status is required'),
     notes: z.string().optional(),
     estimatedStartDate: z.string().optional(),
-    duration: z
-      .union([z.number().int().positive('Duration must be a positive number'), z.nan()])
-      .optional()
-      .nullable(),
+    duration: z.number().int().positive('Duration must be a positive number').nullable().optional(),
     durationUnit: z.string().optional(),
   })
   .refine(
@@ -40,7 +37,7 @@ const schema = z
   )
   .refine(
     (data) => {
-      const hasDuration = typeof data.duration === 'number' && !Number.isNaN(data.duration);
+      const hasDuration = data.duration != null;
       return !hasDuration || Boolean(data.durationUnit);
     },
     { message: 'Duration unit is required when a duration is provided', path: ['durationUnit'] },

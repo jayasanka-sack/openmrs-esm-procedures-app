@@ -290,7 +290,7 @@ const ProceduresFormComponent: React.FC<ProceduresFormComponentProps> = ({
                       allowEmpty
                       value={value ?? ''}
                       onChange={(_event, { value: nextValue }: { value: number | string }) => {
-                        if (nextValue === '' || nextValue === null || nextValue === undefined) {
+                        if (nextValue == null || nextValue === '') {
                           onChange(null);
                           return;
                         }
